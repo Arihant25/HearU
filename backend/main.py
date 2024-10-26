@@ -1,13 +1,14 @@
-# Install required packages
-# !pip install transformers torch spacy pandas numpy scikit-learn vaderSentiment matplotlib seaborn plotly
-# !python - m spacy download en_core_web_sm
-
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.feature_extraction.text import TfidfVectorizer
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel, EmailStr
+from typing import List, Optional, Dict
+import sqlite3
+import json
+from datetime import datetime, timedelta
+import subprocess
+import asyncio
+from pathlib import Path
+import os
 import torch
 import spacy
 import seaborn as sns
@@ -16,857 +17,28 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
-from datetime import datetime, timedelta
-import json
-training_data = [
-    # Anxiety (General)
-    {
-        'text': 'I feel constantly worried about everything and can\'t control my thoughts',
-        'polarity': 'Negative',
-        'extracted_concern': 'constant worry',
-        'category': 'anxiety',
-        'intensity': 8,
-        'keywords': ['worried', 'constantly', 'control']
-    },
-    {
-        'text': 'My mind races with anxious thoughts, especially at night',
-        'polarity': 'Negative',
-        'extracted_concern': 'racing thoughts',
-        'category': 'anxiety',
-        'intensity': 7,
-        'keywords': ['racing thoughts', 'anxious', 'night']
-    },
-    {
-        'text': 'Starting to feel better about managing my anxiety with meditation',
-        'polarity': 'Positive',
-        'extracted_concern': 'improving anxiety',
-        'category': 'anxiety',
-        'intensity': 4,
-        'keywords': ['better', 'anxiety', 'meditation']
-    },
-    {
-        'text': 'Panic attacks are becoming more frequent and intense',
-        'polarity': 'Negative',
-        'extracted_concern': 'panic attacks',
-        'category': 'anxiety',
-        'intensity': 9,
-        'keywords': ['panic attacks', 'frequent', 'intense']
-    },
-    {
-        'text': 'Feeling anxious about social situations but trying exposure therapy',
-        'polarity': 'Neutral',
-        'extracted_concern': 'social anxiety treatment',
-        'category': 'anxiety',
-        'intensity': 6,
-        'keywords': ['anxious', 'social', 'therapy']
-    },
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.feature_extraction.text import TfidfVectorizer
+import uvicorn
 
-    # Depression
-    {
-        'text': 'Nothing brings me joy anymore, feeling completely empty inside',
-        'polarity': 'Negative',
-        'extracted_concern': 'anhedonia',
-        'category': 'depression',
-        'intensity': 9,
-        'keywords': ['joy', 'empty', 'nothing']
-    },
-    {
-        'text': 'Can\'t get out of bed most days, everything feels overwhelming',
-        'polarity': 'Negative',
-        'extracted_concern': 'lack of motivation',
-        'category': 'depression',
-        'intensity': 8,
-        'keywords': ['bed', 'overwhelming']
-    },
-    {
-        'text': 'Started antidepressants, feeling slightly more energetic',
-        'polarity': 'Positive',
-        'extracted_concern': 'treatment progress',
-        'category': 'depression',
-        'intensity': 5,
-        'keywords': ['antidepressants', 'energetic']
-    },
-    {
-        'text': 'Depression making it hard to concentrate at work',
-        'polarity': 'Negative',
-        'extracted_concern': 'cognitive issues',
-        'category': 'depression',
-        'intensity': 7,
-        'keywords': ['depression', 'concentrate', 'work']
-    },
-    {
-        'text': 'Feeling hopeless about the future despite therapy',
-        'polarity': 'Negative',
-        'extracted_concern': 'hopelessness',
-        'category': 'depression',
-        'intensity': 8,
-        'keywords': ['hopeless', 'future', 'therapy']
-    },
 
-    # Academic Stress
-    {
-        'text': 'Overwhelmed by upcoming finals and assignment deadlines',
-        'polarity': 'Negative',
-        'extracted_concern': 'academic pressure',
-        'category': 'academic_stress',
-        'intensity': 8,
-        'keywords': ['finals', 'deadlines', 'overwhelmed']
-    },
-    {
-        'text': 'Can\'t focus on studying, worried about failing',
-        'polarity': 'Negative',
-        'extracted_concern': 'academic performance',
-        'category': 'academic_stress',
-        'intensity': 7,
-        'keywords': ['studying', 'failing', 'focus']
-    },
-    {
-        'text': 'Created a study schedule, feeling more organized',
-        'polarity': 'Positive',
-        'extracted_concern': 'academic management',
-        'category': 'academic_stress',
-        'intensity': 4,
-        'keywords': ['study', 'schedule', 'organized']
-    },
-    {
-        'text': 'Pressure to maintain high GPA is affecting my sleep',
-        'polarity': 'Negative',
-        'extracted_concern': 'academic pressure',
-        'category': 'academic_stress',
-        'intensity': 7,
-        'keywords': ['GPA', 'pressure', 'sleep']
-    },
-    {
-        'text': 'Worried about college applications and future prospects',
-        'polarity': 'Negative',
-        'extracted_concern': 'future academics',
-        'category': 'academic_stress',
-        'intensity': 6,
-        'keywords': ['college', 'applications', 'future']
-    },
+# FastAPI Models
+class User(BaseModel):
+    email: EmailStr
+    name: Optional[str] = None
 
-    # Relationship Issues
-    {
-        'text': 'Having constant arguments with my partner about trust',
-        'polarity': 'Negative',
-        'extracted_concern': 'relationship conflict',
-        'category': 'relationship_issues',
-        'intensity': 8,
-        'keywords': ['arguments', 'partner', 'trust']
-    },
-    {
-        'text': 'Feeling disconnected from my family after moving away',
-        'polarity': 'Negative',
-        'extracted_concern': 'family distance',
-        'category': 'relationship_issues',
-        'intensity': 6,
-        'keywords': ['disconnected', 'family', 'moving']
-    },
-    {
-        'text': 'Communication with spouse has improved after counseling',
-        'polarity': 'Positive',
-        'extracted_concern': 'relationship improvement',
-        'category': 'relationship_issues',
-        'intensity': 4,
-        'keywords': ['communication', 'spouse', 'counseling']
-    },
-    {
-        'text': 'Struggling to maintain friendships due to depression',
-        'polarity': 'Negative',
-        'extracted_concern': 'social relationships',
-        'category': 'relationship_issues',
-        'intensity': 7,
-        'keywords': ['friendships', 'struggling', 'depression']
-    },
-    {
-        'text': 'Trust issues from past relationship affecting current one',
-        'polarity': 'Negative',
-        'extracted_concern': 'trust issues',
-        'category': 'relationship_issues',
-        'intensity': 7,
-        'keywords': ['trust', 'relationship', 'past']
-    },
 
-    # Career Confusion
-    {
-        'text': 'Unsure about my career path, feeling lost',
-        'polarity': 'Negative',
-        'extracted_concern': 'career uncertainty',
-        'category': 'career_confusion',
-        'intensity': 6,
-        'keywords': ['career', 'lost', 'unsure']
-    },
-    {
-        'text': 'Considering a career change but scared of the unknown',
-        'polarity': 'Negative',
-        'extracted_concern': 'career transition',
-        'category': 'career_confusion',
-        'intensity': 7,
-        'keywords': ['career change', 'scared', 'unknown']
-    },
-    {
-        'text': 'Started career counseling to explore options',
-        'polarity': 'Positive',
-        'extracted_concern': 'career exploration',
-        'category': 'career_confusion',
-        'intensity': 4,
-        'keywords': ['career counseling', 'options']
-    },
-    {
-        'text': 'Feeling stuck in current job but afraid to leave',
-        'polarity': 'Negative',
-        'extracted_concern': 'career stagnation',
-        'category': 'career_confusion',
-        'intensity': 6,
-        'keywords': ['stuck', 'job', 'afraid']
-    },
-    {
-        'text': 'Worried my skills aren\'t relevant for the job market',
-        'polarity': 'Negative',
-        'extracted_concern': 'career skills',
-        'category': 'career_confusion',
-        'intensity': 7,
-        'keywords': ['skills', 'job market', 'worried']
-    },
+class Message(BaseModel):
+    text: str
 
-    # Health Anxiety
-    {
-        'text': 'Constantly googling symptoms and fearing the worst',
-        'polarity': 'Negative',
-        'extracted_concern': 'health anxiety',
-        'category': 'health_anxiety',
-        'intensity': 8,
-        'keywords': ['symptoms', 'googling', 'worst']
-    },
-    {
-        'text': 'Every small body sensation makes me panic about serious illness',
-        'polarity': 'Negative',
-        'extracted_concern': 'health paranoia',
-        'category': 'health_anxiety',
-        'intensity': 9,
-        'keywords': ['body', 'panic', 'illness']
-    },
-    {
-        'text': 'Working with therapist to manage health-related fears',
-        'polarity': 'Neutral',
-        'extracted_concern': 'health anxiety management',
-        'category': 'health_anxiety',
-        'intensity': 5,
-        'keywords': ['therapist', 'health', 'fears']
-    },
-    {
-        'text': 'Obsessively checking my pulse and blood pressure',
-        'polarity': 'Negative',
-        'extracted_concern': 'health monitoring',
-        'category': 'health_anxiety',
-        'intensity': 8,
-        'keywords': ['pulse', 'blood pressure', 'checking']
-    },
-    {
-        'text': 'Fear of getting sick is preventing me from going out',
-        'polarity': 'Negative',
-        'extracted_concern': 'illness anxiety',
-        'category': 'health_anxiety',
-        'intensity': 7,
-        'keywords': ['sick', 'fear', 'going out']
-    },
 
-    # Social Anxiety
-    {
-        'text': 'Terrified of speaking up in meetings at work',
-        'polarity': 'Negative',
-        'extracted_concern': 'social fear',
-        'category': 'social_anxiety',
-        'intensity': 8,
-        'keywords': ['speaking', 'meetings', 'terrified']
-    },
-    {
-        'text': 'Avoiding social gatherings due to anxiety',
-        'polarity': 'Negative',
-        'extracted_concern': 'social avoidance',
-        'category': 'social_anxiety',
-        'intensity': 7,
-        'keywords': ['avoiding', 'social', 'gatherings']
-    },
-    {
-        'text': 'Made progress in group therapy for social anxiety',
-        'polarity': 'Positive',
-        'extracted_concern': 'treatment progress',
-        'category': 'social_anxiety',
-        'intensity': 4,
-        'keywords': ['progress', 'group therapy', 'social']
-    },
-    {
-        'text': 'Constant fear of judgment from others',
-        'polarity': 'Negative',
-        'extracted_concern': 'social judgment',
-        'category': 'social_anxiety',
-        'intensity': 8,
-        'keywords': ['fear', 'judgment', 'others']
-    },
-    {
-        'text': 'Heart races when having to introduce myself to new people',
-        'polarity': 'Negative',
-        'extracted_concern': 'social interaction',
-        'category': 'social_anxiety',
-        'intensity': 7,
-        'keywords': ['heart races', 'introduce', 'new people']
-    },
-
-    # Eating Disorders
-    {
-        'text': 'Feeling guilty and anxious after every meal',
-        'polarity': 'Negative',
-        'extracted_concern': 'food guilt',
-        'category': 'eating_disorder',
-        'intensity': 8,
-        'keywords': ['guilty', 'anxious', 'meal']
-    },
-    {
-        'text': 'Started following a recovery meal plan with nutritionist',
-        'polarity': 'Positive',
-        'extracted_concern': 'recovery process',
-        'category': 'eating_disorder',
-        'intensity': 5,
-        'keywords': ['recovery', 'meal plan', 'nutritionist']
-    },
-    {
-        'text': 'Obsessing over calories and weight constantly',
-        'polarity': 'Negative',
-        'extracted_concern': 'food obsession',
-        'category': 'eating_disorder',
-        'intensity': 9,
-        'keywords': ['calories', 'weight', 'obsessing']
-    },
-    {
-        'text': 'Body image issues affecting my daily life',
-        'polarity': 'Negative',
-        'extracted_concern': 'body image',
-        'category': 'eating_disorder',
-        'intensity': 8,
-        'keywords': ['body image', 'affecting', 'daily']
-    },
-    {
-        'text': 'Fear of eating in public places',
-        'polarity': 'Negative',
-        'extracted_concern': 'social eating',
-        'category': 'eating_disorder',
-        'intensity': 7,
-        'keywords': ['eating', 'public', 'fear']
-    },
-
-    # Insomnia
-    {
-        'text': 'Haven\'t had a full night\'s sleep in weeks',
-        'polarity': 'Negative',
-        'extracted_concern': 'sleep deprivation',
-        'category': 'insomnia',
-        'intensity': 9,
-        'keywords': ['sleep', 'weeks', 'full night']
-    },
-    {
-        'text': 'Mind races when trying to fall asleep',
-        'polarity': 'Negative',
-        'extracted_concern': 'sleep difficulty',
-        'category': 'insomnia',
-        'intensity': 7,
-        'keywords': ['mind races', 'fall asleep']
-    },
-    {
-        'text': 'Sleep medication helping but worried about dependency',
-        'polarity': 'Neutral',
-        'extracted_concern': 'sleep treatment',
-        'category': 'insomnia',
-        'intensity': 6,
-        'keywords': ['sleep medication', 'dependency', 'worried']
-    },
-    {
-        'text': 'Trying CBT-I techniques for better sleep',
-        'polarity': 'Positive',
-        'extracted_concern': 'sleep improvement',
-        'category': 'insomnia',
-        'intensity': 5,
-        'keywords': ['CBT-I', 'techniques', 'sleep']
-    },
-    {
-        'text': 'Irregular work schedule destroying my sleep pattern',
-        'polarity': 'Negative',
-        'extracted_concern': 'sleep disruption',
-        'category': 'insomnia',
-        'intensity': 8,
-        'keywords': ['work schedule', 'sleep pattern', 'irregular']
-    },
-
-    # Self-Esteem
-    {
-        'text': 'Feeling worthless and inadequate compared to peers',
-        'polarity': 'Negative',
-        'extracted_concern': 'low self-worth',
-        'category': 'self_esteem',
-        'intensity': 8,
-        'keywords': ['worthless', 'inadequate', 'peers']
-    },
-    {
-        'text': 'Starting to recognize my own achievements',
-        'polarity': 'Positive',
-        'extracted_concern': 'self-improvement',
-        'category': 'self_esteem',
-        'intensity': 4,
-        'keywords': ['achievements', 'recognize']
-    },
-    {
-        'text': 'Constant self-criticism affecting my confidence',
-        'polarity': 'Negative',
-        'extracted_concern': 'self-criticism',
-        'category': 'self_esteem',
-        'intensity': 7,
-        'keywords': ['self-criticism', 'confidence']
-    },
-    {
-        'text': 'Difficulty accepting compliments or praise',
-        'polarity': 'Negative',
-        'extracted_concern': 'self-acceptance',
-        'category': 'self_esteem',
-        'intensity': 6,
-        'keywords': ['compliments', 'praise', 'difficulty']
-    },
-    {
-        'text': 'Working on self-compassion with my therapist',
-        'polarity': 'Positive',
-        'extracted_concern': 'self-improvement',
-        'category': 'self_esteem',
-        'intensity': 5,
-        'keywords': ['self-compassion', 'therapist', 'working']
-    },
-
-    # Financial Stress
-    {
-        'text': 'Overwhelming debt keeping me up at night',
-        'polarity': 'Negative',
-        'extracted_concern': 'debt anxiety',
-        'category': 'financial_stress',
-        'intensity': 9,
-        'keywords': ['debt', 'overwhelming', 'night']
-    },
-    {
-        'text': 'Created a budget plan, feeling more in control',
-        'polarity': 'Positive',
-        'extracted_concern': 'financial management',
-        'category': 'financial_stress',
-        'intensity': 5,
-        'keywords': ['budget', 'control', 'plan']
-    },
-    {
-        'text': 'Constant worry about paying bills and rent',
-        'polarity': 'Negative',
-        'extracted_concern': 'financial worry',
-        'category': 'financial_stress',
-        'intensity': 8,
-        'keywords': ['bills', 'rent', 'worry']
-    },
-    {
-        'text': 'Job loss has depleted all my savings',
-        'polarity': 'Negative',
-        'extracted_concern': 'financial crisis',
-        'category': 'financial_stress',
-        'intensity': 9,
-        'keywords': ['job loss', 'savings', 'depleted']
-    },
-    {
-        'text': 'Started side hustle to manage financial pressure',
-        'polarity': 'Neutral',
-        'extracted_concern': 'financial coping',
-        'category': 'financial_stress',
-        'intensity': 6,
-        'keywords': ['side hustle', 'financial', 'pressure']
-    },
-
-    # Work Stress
-    {
-        'text': 'Burnout from excessive workload and overtime',
-        'polarity': 'Negative',
-        'extracted_concern': 'work burnout',
-        'category': 'work_stress',
-        'intensity': 8,
-        'keywords': ['burnout', 'workload', 'overtime']
-    },
-    {
-        'text': 'Toxic workplace environment affecting mental health',
-        'polarity': 'Negative',
-        'extracted_concern': 'workplace environment',
-        'category': 'work_stress',
-        'intensity': 9,
-        'keywords': ['toxic', 'workplace', 'mental health']
-    },
-    {
-        'text': 'Set better boundaries at work, feeling relieved',
-        'polarity': 'Positive',
-        'extracted_concern': 'work boundaries',
-        'category': 'work_stress',
-        'intensity': 4,
-        'keywords': ['boundaries', 'work', 'relieved']
-    },
-    {
-        'text': 'Performance review anxiety affecting sleep',
-        'polarity': 'Negative',
-        'extracted_concern': 'work performance',
-        'category': 'work_stress',
-        'intensity': 7,
-        'keywords': ['performance review', 'anxiety', 'sleep']
-    },
-    {
-        'text': 'Difficulty maintaining work-life balance',
-        'polarity': 'Negative',
-        'extracted_concern': 'work-life balance',
-        'category': 'work_stress',
-        'intensity': 7,
-        'keywords': ['work-life balance', 'difficulty']
-    },
-
-    # Family Issues
-    {
-        'text': 'Parents\' divorce causing emotional turmoil',
-        'polarity': 'Negative',
-        'extracted_concern': 'family conflict',
-        'category': 'family_issues',
-        'intensity': 8,
-        'keywords': ['divorce', 'parents', 'emotional']
-    },
-    {
-        'text': 'Sibling rivalry creating family tension',
-        'polarity': 'Negative',
-        'extracted_concern': 'family dynamics',
-        'category': 'family_issues',
-        'intensity': 6,
-        'keywords': ['sibling', 'rivalry', 'tension']
-    },
-    {
-        'text': 'Family therapy helping improve communication',
-        'polarity': 'Positive',
-        'extracted_concern': 'family improvement',
-        'category': 'family_issues',
-        'intensity': 5,
-        'keywords': ['family therapy', 'communication', 'improve']
-    },
-    {
-        'text': 'Caring for sick parent while managing work',
-        'polarity': 'Negative',
-        'extracted_concern': 'caregiver stress',
-        'category': 'family_issues',
-        'intensity': 8,
-        'keywords': ['caring', 'sick parent', 'work']
-    },
-    {
-        'text': 'Cultural differences causing family conflicts',
-        'polarity': 'Negative',
-        'extracted_concern': 'cultural issues',
-        'category': 'family_issues',
-        'intensity': 7,
-        'keywords': ['cultural', 'differences', 'conflicts']
-    },
-
-    # Addiction
-    {
-        'text': 'Struggling to overcome gaming addiction',
-        'polarity': 'Negative',
-        'extracted_concern': 'behavioral addiction',
-        'category': 'addiction',
-        'intensity': 7,
-        'keywords': ['gaming', 'addiction', 'struggling']
-    },
-    {
-        'text': 'Three months sober but facing strong urges',
-        'polarity': 'Neutral',
-        'extracted_concern': 'recovery challenge',
-        'category': 'addiction',
-        'intensity': 6,
-        'keywords': ['sober', 'urges', 'months']
-    },
-    {
-        'text': 'Support group helping maintain sobriety',
-        'polarity': 'Positive',
-        'extracted_concern': 'recovery support',
-        'category': 'addiction',
-        'intensity': 5,
-        'keywords': ['support group', 'sobriety', 'maintain']
-    },
-    {
-        'text': 'Social media addiction affecting productivity',
-        'polarity': 'Negative',
-        'extracted_concern': 'digital addiction',
-        'category': 'addiction',
-        'intensity': 7,
-        'keywords': ['social media', 'addiction', 'productivity']
-    },
-    {
-        'text': 'Relapsed after six months, feeling ashamed',
-        'polarity': 'Negative',
-        'extracted_concern': 'relapse',
-        'category': 'addiction',
-        'intensity': 9,
-        'keywords': ['relapsed', 'months', 'ashamed']
-    },
-
-    # PTSD/Trauma
-    {
-        'text': 'Flashbacks getting more intense lately',
-        'polarity': 'Negative',
-        'extracted_concern': 'trauma symptoms',
-        'category': 'ptsd_trauma',
-        'intensity': 9,
-        'keywords': ['flashbacks', 'intense']
-    },
-    {
-        'text': 'EMDR therapy helping process trauma',
-        'polarity': 'Positive',
-        'extracted_concern': 'trauma treatment',
-        'category': 'ptsd_trauma',
-        'intensity': 5,
-        'keywords': ['EMDR', 'therapy', 'trauma']
-    },
-    {
-        'text': 'Nightmares about past trauma affecting sleep',
-        'polarity': 'Negative',
-        'extracted_concern': 'trauma nightmares',
-        'category': 'ptsd_trauma',
-        'intensity': 8,
-        'keywords': ['nightmares', 'trauma', 'sleep']
-    },
-    {
-        'text': 'Triggered by loud noises and crowds',
-        'polarity': 'Negative',
-        'extracted_concern': 'trauma triggers',
-        'category': 'ptsd_trauma',
-        'intensity': 7,
-        'keywords': ['triggered', 'loud noises', 'crowds']
-    },
-    {
-        'text': 'Learning grounding techniques for flashbacks',
-        'polarity': 'Neutral',
-        'extracted_concern': 'coping strategies',
-        'category': 'ptsd_trauma',
-        'intensity': 6,
-        'keywords': ['grounding', 'techniques', 'flashbacks']
-    },
-
-    # Identity Issues
-    {
-        'text': 'Questioning my identity and life purpose',
-        'polarity': 'Negative',
-        'extracted_concern': 'identity crisis',
-        'category': 'identity_issues',
-        'intensity': 7,
-        'keywords': ['questioning', 'identity', 'purpose']
-    },
-    {
-        'text': 'Struggling with cultural identity between two worlds',
-        'polarity': 'Negative',
-        'extracted_concern': 'cultural identity',
-        'category': 'identity_issues',
-        'intensity': 7,
-        'keywords': ['cultural', 'identity', 'struggling']
-    },
-    {
-        'text': 'Starting to accept and embrace who I am',
-        'polarity': 'Positive',
-        'extracted_concern': 'self-acceptance',
-        'category': 'identity_issues',
-        'intensity': 4,
-        'keywords': ['accept', 'embrace', 'who I am']
-    },
-    {
-        'text': 'Gender identity exploration causing family tension',
-        'polarity': 'Negative',
-        'extracted_concern': 'gender identity',
-        'category': 'identity_issues',
-        'intensity': 8,
-        'keywords': ['gender', 'identity', 'family']
-    },
-    {
-        'text': 'Finding community with similar identity struggles',
-        'polarity': 'Positive',
-        'extracted_concern': 'identity support',
-        'category': 'identity_issues',
-        'intensity': 5,
-        'keywords': ['community', 'identity', 'similar']
-    },
-
-    # Cultural Adjustment
-    {
-        'text': 'Feeling isolated in new country, missing home',
-        'polarity': 'Negative',
-        'extracted_concern': 'cultural isolation',
-        'category': 'cultural_adjustment',
-        'intensity': 8,
-        'keywords': ['isolated', 'new country', 'home']
-    },
-    {
-        'text': 'Language barrier making it hard to connect',
-        'polarity': 'Negative',
-        'extracted_concern': 'communication barrier',
-        'category': 'cultural_adjustment',
-        'intensity': 7,
-        'keywords': ['language barrier', 'connect']
-    },
-    {
-        'text': 'Made first local friend, feeling more settled',
-        'polarity': 'Positive',
-        'extracted_concern': 'cultural integration',
-        'category': 'cultural_adjustment',
-        'intensity': 4,
-        'keywords': ['local friend', 'settled']
-    },
-    {
-        'text': 'Cultural differences at work causing stress',
-        'polarity': 'Negative',
-        'extracted_concern': 'workplace culture',
-        'category': 'cultural_adjustment',
-        'intensity': 6,
-        'keywords': ['cultural differences', 'work', 'stress']
-    },
-    {
-        'text': 'Starting to appreciate new cultural experiences',
-        'polarity': 'Positive',
-        'extracted_concern': 'cultural adaptation',
-        'category': 'cultural_adjustment',
-        'intensity': 5,
-        'keywords': ['appreciate', 'cultural', 'experiences']
-    },
-
-    # Grief/Loss
-    {
-        'text': 'Can\'t cope with the loss of my parent',
-        'polarity': 'Negative',
-        'extracted_concern': 'grief processing',
-        'category': 'grief_loss',
-        'intensity': 9,
-        'keywords': ['loss', 'parent', 'cope']
-    },
-    {
-        'text': 'First holiday season without them is unbearable',
-        'polarity': 'Negative',
-        'extracted_concern': 'holiday grief',
-        'category': 'grief_loss',
-        'intensity': 9,
-        'keywords': ['holiday', 'without', 'unbearable']
-    },
-    {
-        'text': 'Grief support group helping me process loss',
-        'polarity': 'Neutral',
-        'extracted_concern': 'grief support',
-        'category': 'grief_loss',
-        'intensity': 6,
-        'keywords': ['grief', 'support group', 'process']
-    },
-    {
-        'text': 'Finding ways to honor their memory',
-        'polarity': 'Positive',
-        'extracted_concern': 'memorial coping',
-        'category': 'grief_loss',
-        'intensity': 5,
-        'keywords': ['honor', 'memory', 'ways']
-    },
-    {
-        'text': 'Unexpected triggers bringing back grief waves',
-        'polarity': 'Negative',
-        'extracted_concern': 'grief triggers',
-        'category': 'grief_loss',
-        'intensity': 8,
-        'keywords': ['triggers', 'grief', 'waves']
-    },
-
-    # Burnout
-    {
-        'text': 'Complete physical and emotional exhaustion',
-        'polarity': 'Negative',
-        'extracted_concern': 'severe burnout',
-        'category': 'burnout',
-        'intensity': 9,
-        'keywords': ['exhaustion', 'physical', 'emotional']
-    },
-    {
-        'text': 'Taking a sabbatical to recover from burnout',
-        'polarity': 'Neutral',
-        'extracted_concern': 'burnout recovery',
-        'category': 'burnout',
-        'intensity': 6,
-        'keywords': ['sabbatical', 'recover', 'burnout']
-    },
-    {
-        'text': 'Started setting boundaries to prevent burnout',
-        'polarity': 'Positive',
-        'extracted_concern': 'burnout prevention',
-        'category': 'burnout',
-        'intensity': 5,
-        'keywords': ['boundaries', 'prevent', 'burnout']
-    },
-    {
-        'text': 'Can\'t focus or be productive anymore',
-        'polarity': 'Negative',
-        'extracted_concern': 'cognitive burnout',
-        'category': 'burnout',
-        'intensity': 8,
-        'keywords': ['focus', 'productive', 'anymore']
-    },
-    {
-        'text': 'Feeling disconnected from work and colleagues',
-        'polarity': 'Negative',
-        'extracted_concern': 'work disconnection',
-        'category': 'burnout',
-        'intensity': 7,
-        'keywords': ['disconnected', 'work', 'colleagues']
-    },
-
-    # Positive Outlook
-    {
-        'text': 'Therapy and medication finally showing results',
-        'polarity': 'Positive',
-        'extracted_concern': 'treatment success',
-        'category': 'positive_outlook',
-        'intensity': 4,
-        'keywords': ['therapy', 'medication', 'results']
-    },
-    {
-        'text': 'Learning to appreciate small daily victories',
-        'polarity': 'Positive',
-        'extracted_concern': 'gratitude practice',
-        'category': 'positive_outlook',
-        'intensity': 3,
-        'keywords': ['appreciate', 'victories', 'daily']
-    },
-    {
-        'text': 'Started journaling and seeing patterns improve',
-        'polarity': 'Positive',
-        'extracted_concern': 'self-improvement',
-        'category': 'positive_outlook',
-        'intensity': 4,
-        'keywords': ['journaling', 'patterns', 'improve']
-    },
-    {
-        'text': 'Finding hope and strength in support system',
-        'polarity': 'Positive',
-        'extracted_concern': 'support appreciation',
-        'category': 'positive_outlook',
-        'intensity': 3,
-        'keywords': ['hope', 'strength', 'support']
-    },
-    {
-        'text': 'Meditation practice helping maintain balance',
-        'polarity': 'Positive',
-        'extracted_concern': 'wellness practice',
-        'category': 'positive_outlook',
-        'intensity': 3,
-        'keywords': ['meditation', 'balance', 'practice']
-    }
-]
-
-timeline_entries = [{'text': 'I feel completely overwhelmed and anxious',
-                     'timestamp': '2024-01-01'},
-                    {'text': 'Started therapy, feeling a bit better',
-                     'timestamp': '2024-01-15'},
-                    {'text': 'Making good progress, still some anxiety',
-                     'timestamp': '2024-01-30'}]
+class ConversationHistory(BaseModel):
+    messages: List[Dict]
+    analysis: Optional[Dict] = None
 
 
 class MentalHealthCategories:
@@ -1000,17 +172,15 @@ class MentalHealthCategories:
 
     @classmethod
     def get_all_categories(cls):
-        """Get a list of all available mental health categories"""
         return list(cls.CATEGORIES.keys())
 
     @classmethod
     def get_keywords(cls, category):
-        """Get keywords associated with a specific mental health category"""
         return cls.CATEGORIES.get(category, [])
 
 
 class MentalHealthAnalyzer:
-    """Class to perform mental health analysis on text data"""
+    """Core analyzer class for mental health text analysis"""
 
     def __init__(self):
         self.nlp = spacy.load("en_core_web_sm")
@@ -1022,7 +192,6 @@ class MentalHealthAnalyzer:
         self.categories = MentalHealthCategories.get_all_categories()
 
     def train(self, training_data):
-        """Train the mental health analyzer with labeled training data"""
         texts = [item['text'] for item in training_data]
         categories = [item['category'] for item in training_data]
         intensities = [item['intensity'] for item in training_data]
@@ -1032,7 +201,6 @@ class MentalHealthAnalyzer:
         self.intensity_scaler.fit(np.array(intensities).reshape(-1, 1))
 
     def analyze_text(self, text, timestamp=None):
-        """Analyze a single text entry for mental health insights"""
         text = text.strip()
         timestamp = timestamp or datetime.now()
 
@@ -1078,7 +246,6 @@ class MentalHealthAnalyzer:
         return 'Neutral'
 
     def extract_keywords(self, text):
-        """Extract relevant keywords from text using NER and predefined terms"""
         doc = self.nlp(text)
         keywords = []
 
@@ -1103,7 +270,6 @@ class MentalHealthAnalyzer:
         return keywords
 
     def _calculate_intensity(self, text, sentiment_scores):
-        """Calculate intensity of mental health concerns based on text and sentiment"""
         intensity_words = {
             'high': {'extremely', 'severe', 'very', 'always', 'completely'},
             'medium': {'often', 'somewhat', 'moderate', 'sometimes'},
@@ -1127,36 +293,159 @@ class MentalHealthAnalyzer:
             'level': 'High' if final_score >= 7 else 'Medium' if final_score >= 4 else 'Low'
         }
 
-    def analyze_timeline(self):
-        """Analyze the entire timeline data for trends and insights"""
-        if not self.timeline_data:
-            return None
 
-        timeline = pd.DataFrame(self.timeline_data)
-        timeline['timestamp'] = pd.to_datetime(timeline['timestamp'])
+class DatabaseManager:
+    def __init__(self, db_path="mental_health.db"):
+        self.db_path = db_path
+        self.init_db()
 
-        sentiment_trends = timeline.groupby('timestamp').apply(
-            lambda x: pd.Series({
-                'avg_sentiment': np.mean([d['scores']['compound'] for d in x['sentiment']]),
-                'avg_intensity': np.mean([d['score'] for d in x['intensity']])
-            })
-        )
+    def init_db(self):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
 
-        return {
-            'sentiment_trends': sentiment_trends,
-            'total_entries': len(timeline),
-            'date_range': {
-                'start': min(timeline['timestamp']),
-                'end': max(timeline['timestamp'])
-            },
-            'category_distribution': timeline['category'].apply(lambda x: x['primary']).value_counts().to_dict(),
-            'average_intensity': np.mean([d['intensity']['score'] for d in self.timeline_data])
-        }
+        # Create users table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users
+            (email TEXT PRIMARY KEY, name TEXT)
+        ''')
+
+        # Create conversations table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS conversations
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             user_email TEXT,
+             message TEXT,
+             timestamp TEXT,
+             analysis TEXT,
+             model_response TEXT)
+        ''')
+
+        conn.commit()
+        conn.close()
+
+    def add_user(self, email: str, name: Optional[str] = None):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('INSERT OR REPLACE INTO users (email, name) VALUES (?, ?)',
+                  (email, name))
+        conn.commit()
+        conn.close()
+
+    def add_conversation(self, email: str, message: str, analysis: dict, model_response: str):
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        timestamp = datetime.now().isoformat()
+        c.execute('''
+            INSERT INTO conversations 
+            (user_email, message, timestamp, analysis, model_response)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (email, message, timestamp, json.dumps(analysis), model_response))
+        conn.commit()
+        conn.close()
+
+    def get_conversation_history(self, email: str) -> List[Dict]:
+        conn = sqlite3.connect(self.db_path)
+        c = conn.cursor()
+        c.execute('''
+            SELECT message, timestamp, analysis, model_response 
+            FROM conversations 
+            WHERE user_email = ? 
+            ORDER BY timestamp
+        ''', (email,))
+        rows = c.fetchall()
+        conn.close()
+
+        return [
+            {
+                'message': row[0],
+                'timestamp': row[1],
+                'analysis': json.loads(row[2]),
+                'model_response': row[3]
+            }
+            for row in rows
+        ]
+
+
+# TODO: make it start new convos, but pass the history everytime. This way, no need to maintain the processes.
+class OllamaManager:
+    def __init__(self):
+        self.conversations: Dict[str, subprocess.Popen] = {}
+        self.conversation_dirs = Path("conversation_histories")
+        self.conversation_dirs.mkdir(exist_ok=True)
+
+    def get_conversation_path(self, email: str) -> Path:
+        return self.conversation_dirs / f"{email.replace('@', '_at_')}.txt"
+
+    async def start_conversation(self, email: str):
+        if email not in self.conversations:
+            conversation_path = self.get_conversation_path(email)
+
+            print(f"Starting conversation for {email}")
+
+            # Start Ollama process
+            process = subprocess.Popen(
+                ['ollama', 'run', 'llama2'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+            print(f"Started conversation for {email}")
+
+            self.conversations[email] = process
+
+            # Load conversation history if exists
+            if conversation_path.exists():
+                history = conversation_path.read_text()
+                # Send history to model
+                process.stdin.write(f"Previous conversation:\n{history}\n")
+                process.stdin.flush()
+            print(f"Loaded conversation history for {email}")
+
+    async def get_response(self, email: str, message: str) -> str:
+        print(f"Getting response for {email}: {message}")
+        if email not in self.conversations:
+            await self.start_conversation(email)
+
+        print(f"Conversation exists for {email}")
+
+        process = self.conversations[email]
+        conversation_path = self.get_conversation_path(email)
+
+        print(f"Conversation path: {conversation_path}")
+
+        # Send message to model
+        process.stdin.write(f"User: {message}\n")
+        process.stdin.flush()
+
+        print("Sent message to model")
+
+        # Get response
+        response = ""
+        while True:
+            line = process.stdout.readline().strip()
+            if line == "":
+                break
+            response += line + "\n"
+
+        response = response.strip()
+        print(f"Received response from model: {response}")
+
+        # Save to conversation history
+        with conversation_path.open('a') as f:
+            f.write(f"User: {message}\n")
+            f.write(f"Assistant: {response}\n")
+
+        return response
+
+    def close_conversation(self, email: str):
+        if email in self.conversations:
+            self.conversations[email].terminate()
+            del self.conversations[email]
 
 
 class MentalHealthVisualizer:
-    """Class to generate visualizations for mental health analysis"""
-
     def __init__(self, analyzer):
         self.analyzer = analyzer
 
@@ -1177,7 +466,6 @@ class MentalHealthVisualizer:
         plt.show()
 
     def plot_category_distribution(self):
-        """Plot distribution of mental health categories"""
         categories = [entry['category']['primary']
                       for entry in self.analyzer.timeline_data]
         category_counts = pd.Series(categories).value_counts()
@@ -1189,32 +477,7 @@ class MentalHealthVisualizer:
         plt.tight_layout()
         plt.show()
 
-    def plot_intensity_heatmap(self):
-        """Plot heatmap of intensity scores by category and date"""
-        timeline_data = pd.DataFrame(self.analyzer.timeline_data)
-        timeline_data['intensity_score'] = timeline_data['intensity'].apply(
-            lambda x: x['score']
-        )
-        timeline_data['category'] = timeline_data['category'].apply(
-            lambda x: x['primary']
-        )
-
-        pivot_table = pd.pivot_table(
-            timeline_data,
-            values='intensity_score',
-            index='category',
-            columns=pd.to_datetime(timeline_data['timestamp']).dt.date,
-            aggfunc='mean'
-        )
-
-        plt.figure(figsize=(15, 8))
-        sns.heatmap(pivot_table, cmap='YlOrRd', annot=True, fmt='.1f')
-        plt.title('Intensity Heatmap by Category and Date')
-        plt.tight_layout()
-        plt.show()
-
     def generate_interactive_dashboard(self):
-        """Generate an interactive dashboard for mental health analysis"""
         df = pd.DataFrame(self.analyzer.timeline_data)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df['sentiment_score'] = df['sentiment'].apply(
@@ -1239,262 +502,1160 @@ class MentalHealthVisualizer:
         fig3.show()
 
 
-class DataExporter:
-    """Class to export mental health analysis data to CSV, JSON, etc."""
+# Initialize FastAPI app
+app = FastAPI(title="Mental Health Analysis System")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-    def __init__(self, analyzer):
-        self.analyzer = analyzer
-
-    def export_to_csv(self, filename='mental_health_analysis.csv'):
-        df = pd.DataFrame(self.analyzer.timeline_data)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df['sentiment_label'] = df['sentiment'].apply(lambda x: x['label'])
-        df['sentiment_score'] = df['sentiment'].apply(
-            lambda x: x['scores']['compound'])
-        df['category'] = df['category'].apply(lambda x: x['primary'])
-        df['intensity_score'] = df['intensity'].apply(lambda x: x['score'])
-        df['keywords'] = df['keywords'].apply(
-            lambda x: ', '.join([k['text'] for k in x]))
-
-        columns = ['timestamp', 'text', 'sentiment_label', 'sentiment_score',
-                   'category', 'intensity_score', 'keywords']
-        df[columns].to_csv(filename, index=False)
-        print(f"Data exported to {filename}")
-
-    def export_to_json(self, filename='mental_health_analysis.json'):
-        """Export mental health analysis data to JSON format"""
-        with open(filename, 'w') as f:
-            json.dump(self.analyzer.timeline_data, f, default=str, indent=2)
-        print(f"Data exported to {filename}")
-
-    def generate_summary_report(self, filename='analysis_summary.txt'):
-        """Generate a summary report of the mental health analysis"""
-        timeline_analysis = self.analyzer.analyze_timeline()
-
-        with open(filename, 'w') as f:
-            f.write("Mental Health Analysis Summary Report\n")
-            f.write("=" * 40 + "\n\n")
-
-            f.write("Overview:\n")
-            f.write(f"Total Entries: {timeline_analysis['total_entries']}\n")
-            f.write(f"Date Range: {timeline_analysis['date_range']['start']} to {
-                    timeline_analysis['date_range']['end']}\n")
-            f.write(f"Average Intensity: {
-                    timeline_analysis['average_intensity']:.2f}\n\n")
-
-            f.write("Category Distribution:\n")
-            for category, count in timeline_analysis['category_distribution'].items():
-                f.write(f"{category}: {count} entries\n")
-
-        print(f"Summary report generated: {filename}")
-
-
-def create_sample_timeline_data(num_days=30):
-    """Create sample timeline data for testing"""
-    base_date = datetime.now() - timedelta(days=num_days)
-    sample_texts = [
-        "Feeling very anxious about everything today",
-        "Had a good therapy session, feeling hopeful",
-        "Struggling with sleep again",
-        "Making progress with my anxiety management",
-        "Feeling down and unmotivated",
-        "Started a new exercise routine, feeling better",
-        "Having trouble concentrating at work",
-        "Family issues causing stress",
-        "Feeling more confident after counseling",
-        "Worried about my health constantly"
-    ]
-
-    timeline_entries = []
-    for i in range(num_days):
-        current_date = base_date + timedelta(days=i)
-        text = np.random.choice(sample_texts)
-        timeline_entries.append({
-            'text': text,
-            'timestamp': current_date
-        })
-
-    return timeline_entries
+# Initialize core components
+db_manager = DatabaseManager()
+ollama_manager = OllamaManager()
 
 
 class MentalHealthAnalysisSystem:
-    """Class to manage the end-to-end mental health analysis system"""
-
     def __init__(self):
         self.analyzer = MentalHealthAnalyzer()
         self.visualizer = MentalHealthVisualizer(self.analyzer)
-        self.exporter = DataExporter(self.analyzer)
+        self.training_data = self._get_training_data()
+        self.train_system()
 
-    def train_system(self, training_data):
-        print("Training the system...")
-        self.analyzer.train(training_data)
-        print("Training completed!")
+    def _get_training_data(self):
+        return [
+            # Anxiety (General)
+            {
+                'text': 'I feel constantly worried about everything and can\'t control my thoughts',
+                'polarity': 'Negative',
+                'extracted_concern': 'constant worry',
+                'category': 'anxiety',
+                'intensity': 8,
+                'keywords': ['worried', 'constantly', 'control']
+            },
+            {
+                'text': 'My mind races with anxious thoughts, especially at night',
+                'polarity': 'Negative',
+                'extracted_concern': 'racing thoughts',
+                'category': 'anxiety',
+                'intensity': 7,
+                'keywords': ['racing thoughts', 'anxious', 'night']
+            },
+            {
+                'text': 'Starting to feel better about managing my anxiety with meditation',
+                'polarity': 'Positive',
+                'extracted_concern': 'improving anxiety',
+                'category': 'anxiety',
+                'intensity': 4,
+                'keywords': ['better', 'anxiety', 'meditation']
+            },
+            {
+                'text': 'Panic attacks are becoming more frequent and intense',
+                'polarity': 'Negative',
+                'extracted_concern': 'panic attacks',
+                'category': 'anxiety',
+                'intensity': 9,
+                'keywords': ['panic attacks', 'frequent', 'intense']
+            },
+            {
+                'text': 'Feeling anxious about social situations but trying exposure therapy',
+                'polarity': 'Neutral',
+                'extracted_concern': 'social anxiety treatment',
+                'category': 'anxiety',
+                'intensity': 6,
+                'keywords': ['anxious', 'social', 'therapy']
+            },
 
-    def process_timeline(self, timeline_entries):
-        print("Processing timeline entries...")
-        for entry in timeline_entries:
-            self.analyzer.analyze_text(entry['text'],
-                                       pd.to_datetime(entry['timestamp']))
-        print("Timeline processing completed!")
+            # Depression
+            {
+                'text': 'Nothing brings me joy anymore, feeling completely empty inside',
+                'polarity': 'Negative',
+                'extracted_concern': 'anhedonia',
+                'category': 'depression',
+                'intensity': 9,
+                'keywords': ['joy', 'empty', 'nothing']
+            },
+            {
+                'text': 'Can\'t get out of bed most days, everything feels overwhelming',
+                'polarity': 'Negative',
+                'extracted_concern': 'lack of motivation',
+                'category': 'depression',
+                'intensity': 8,
+                'keywords': ['bed', 'overwhelming']
+            },
+            {
+                'text': 'Started antidepressants, feeling slightly more energetic',
+                'polarity': 'Positive',
+                'extracted_concern': 'treatment progress',
+                'category': 'depression',
+                'intensity': 5,
+                'keywords': ['antidepressants', 'energetic']
+            },
+            {
+                'text': 'Depression making it hard to concentrate at work',
+                'polarity': 'Negative',
+                'extracted_concern': 'cognitive issues',
+                'category': 'depression',
+                'intensity': 7,
+                'keywords': ['depression', 'concentrate', 'work']
+            },
+            {
+                'text': 'Feeling hopeless about the future despite therapy',
+                'polarity': 'Negative',
+                'extracted_concern': 'hopelessness',
+                'category': 'depression',
+                'intensity': 8,
+                'keywords': ['hopeless', 'future', 'therapy']
+            },
 
-    def generate_comprehensive_report(self, output_dir='analysis_output'):
-        """Generate comprehensive analysis with visualizations and exports"""
-        # Create output directory
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+            # Academic Stress
+            {
+                'text': 'Overwhelmed by upcoming finals and assignment deadlines',
+                'polarity': 'Negative',
+                'extracted_concern': 'academic pressure',
+                'category': 'academic_stress',
+                'intensity': 8,
+                'keywords': ['finals', 'deadlines', 'overwhelmed']
+            },
+            {
+                'text': 'Can\'t focus on studying, worried about failing',
+                'polarity': 'Negative',
+                'extracted_concern': 'academic performance',
+                'category': 'academic_stress',
+                'intensity': 7,
+                'keywords': ['studying', 'failing', 'focus']
+            },
+            {
+                'text': 'Created a study schedule, feeling more organized',
+                'polarity': 'Positive',
+                'extracted_concern': 'academic management',
+                'category': 'academic_stress',
+                'intensity': 4,
+                'keywords': ['study', 'schedule', 'organized']
+            },
+            {
+                'text': 'Pressure to maintain high GPA is affecting my sleep',
+                'polarity': 'Negative',
+                'extracted_concern': 'academic pressure',
+                'category': 'academic_stress',
+                'intensity': 7,
+                'keywords': ['GPA', 'pressure', 'sleep']
+            },
+            {
+                'text': 'Worried about college applications and future prospects',
+                'polarity': 'Negative',
+                'extracted_concern': 'future academics',
+                'category': 'academic_stress',
+                'intensity': 6,
+                'keywords': ['college', 'applications', 'future']
+            },
 
-        # Export data
-        self.exporter.export_to_csv(f"{output_dir}/analysis_data.csv")
-        self.exporter.export_to_json(f"{output_dir}/analysis_data.json")
-        self.exporter.generate_summary_report(
-            f"{output_dir}/summary_report.txt")
+            # Relationship Issues
+            {
+                'text': 'Having constant arguments with my partner about trust',
+                'polarity': 'Negative',
+                'extracted_concern': 'relationship conflict',
+                'category': 'relationship_issues',
+                'intensity': 8,
+                'keywords': ['arguments', 'partner', 'trust']
+            },
+            {
+                'text': 'Feeling disconnected from my family after moving away',
+                'polarity': 'Negative',
+                'extracted_concern': 'family distance',
+                'category': 'relationship_issues',
+                'intensity': 6,
+                'keywords': ['disconnected', 'family', 'moving']
+            },
+            {
+                'text': 'Communication with spouse has improved after counseling',
+                'polarity': 'Positive',
+                'extracted_concern': 'relationship improvement',
+                'category': 'relationship_issues',
+                'intensity': 4,
+                'keywords': ['communication', 'spouse', 'counseling']
+            },
+            {
+                'text': 'Struggling to maintain friendships due to depression',
+                'polarity': 'Negative',
+                'extracted_concern': 'social relationships',
+                'category': 'relationship_issues',
+                'intensity': 7,
+                'keywords': ['friendships', 'struggling', 'depression']
+            },
+            {
+                'text': 'Trust issues from past relationship affecting current one',
+                'polarity': 'Negative',
+                'extracted_concern': 'trust issues',
+                'category': 'relationship_issues',
+                'intensity': 7,
+                'keywords': ['trust', 'relationship', 'past']
+            },
 
-        # Generate visualizations
-        print("\nGenerating visualizations...")
+            # Career Confusion
+            {
+                'text': 'Unsure about my career path, feeling lost',
+                'polarity': 'Negative',
+                'extracted_concern': 'career uncertainty',
+                'category': 'career_confusion',
+                'intensity': 6,
+                'keywords': ['career', 'lost', 'unsure']
+            },
+            {
+                'text': 'Considering a career change but scared of the unknown',
+                'polarity': 'Negative',
+                'extracted_concern': 'career transition',
+                'category': 'career_confusion',
+                'intensity': 7,
+                'keywords': ['career change', 'scared', 'unknown']
+            },
+            {
+                'text': 'Started career counseling to explore options',
+                'polarity': 'Positive',
+                'extracted_concern': 'career exploration',
+                'category': 'career_confusion',
+                'intensity': 4,
+                'keywords': ['career counseling', 'options']
+            },
+            {
+                'text': 'Feeling stuck in current job but afraid to leave',
+                'polarity': 'Negative',
+                'extracted_concern': 'career stagnation',
+                'category': 'career_confusion',
+                'intensity': 6,
+                'keywords': ['stuck', 'job', 'afraid']
+            },
+            {
+                'text': 'Worried my skills aren\'t relevant for the job market',
+                'polarity': 'Negative',
+                'extracted_concern': 'career skills',
+                'category': 'career_confusion',
+                'intensity': 7,
+                'keywords': ['skills', 'job market', 'worried']
+            },
 
-        # Save static plots
-        plt.figure()
-        self.visualizer.plot_sentiment_timeline()
-        plt.savefig(f"{output_dir}/sentiment_timeline.png")
+            # Health Anxiety
+            {
+                'text': 'Constantly googling symptoms and fearing the worst',
+                'polarity': 'Negative',
+                'extracted_concern': 'health anxiety',
+                'category': 'health_anxiety',
+                'intensity': 8,
+                'keywords': ['symptoms', 'googling', 'worst']
+            },
+            {
+                'text': 'Every small body sensation makes me panic about serious illness',
+                'polarity': 'Negative',
+                'extracted_concern': 'health paranoia',
+                'category': 'health_anxiety',
+                'intensity': 9,
+                'keywords': ['body', 'panic', 'illness']
+            },
+            {
+                'text': 'Working with therapist to manage health-related fears',
+                'polarity': 'Neutral',
+                'extracted_concern': 'health anxiety management',
+                'category': 'health_anxiety',
+                'intensity': 5,
+                'keywords': ['therapist', 'health', 'fears']
+            },
+            {
+                'text': 'Obsessively checking my pulse and blood pressure',
+                'polarity': 'Negative',
+                'extracted_concern': 'health monitoring',
+                'category': 'health_anxiety',
+                'intensity': 8,
+                'keywords': ['pulse', 'blood pressure', 'checking']
+            },
+            {
+                'text': 'Fear of getting sick is preventing me from going out',
+                'polarity': 'Negative',
+                'extracted_concern': 'illness anxiety',
+                'category': 'health_anxiety',
+                'intensity': 7,
+                'keywords': ['sick', 'fear', 'going out']
+            },
 
-        plt.figure()
-        self.visualizer.plot_category_distribution()
-        plt.savefig(f"{output_dir}/category_distribution.png")
+            # Social Anxiety
+            {
+                'text': 'Terrified of speaking up in meetings at work',
+                'polarity': 'Negative',
+                'extracted_concern': 'social fear',
+                'category': 'social_anxiety',
+                'intensity': 8,
+                'keywords': ['speaking', 'meetings', 'terrified']
+            },
+            {
+                'text': 'Avoiding social gatherings due to anxiety',
+                'polarity': 'Negative',
+                'extracted_concern': 'social avoidance',
+                'category': 'social_anxiety',
+                'intensity': 7,
+                'keywords': ['avoiding', 'social', 'gatherings']
+            },
+            {
+                'text': 'Made progress in group therapy for social anxiety',
+                'polarity': 'Positive',
+                'extracted_concern': 'treatment progress',
+                'category': 'social_anxiety',
+                'intensity': 4,
+                'keywords': ['progress', 'group therapy', 'social']
+            },
+            {
+                'text': 'Constant fear of judgment from others',
+                'polarity': 'Negative',
+                'extracted_concern': 'social judgment',
+                'category': 'social_anxiety',
+                'intensity': 8,
+                'keywords': ['fear', 'judgment', 'others']
+            },
+            {
+                'text': 'Heart races when having to introduce myself to new people',
+                'polarity': 'Negative',
+                'extracted_concern': 'social interaction',
+                'category': 'social_anxiety',
+                'intensity': 7,
+                'keywords': ['heart races', 'introduce', 'new people']
+            },
 
-        plt.figure()
-        self.visualizer.plot_intensity_heatmap()
-        plt.savefig(f"{output_dir}/intensity_heatmap.png")
+            # Eating Disorders
+            {
+                'text': 'Feeling guilty and anxious after every meal',
+                'polarity': 'Negative',
+                'extracted_concern': 'food guilt',
+                'category': 'eating_disorder',
+                'intensity': 8,
+                'keywords': ['guilty', 'anxious', 'meal']
+            },
+            {
+                'text': 'Started following a recovery meal plan with nutritionist',
+                'polarity': 'Positive',
+                'extracted_concern': 'recovery process',
+                'category': 'eating_disorder',
+                'intensity': 5,
+                'keywords': ['recovery', 'meal plan', 'nutritionist']
+            },
+            {
+                'text': 'Obsessing over calories and weight constantly',
+                'polarity': 'Negative',
+                'extracted_concern': 'food obsession',
+                'category': 'eating_disorder',
+                'intensity': 9,
+                'keywords': ['calories', 'weight', 'obsessing']
+            },
+            {
+                'text': 'Body image issues affecting my daily life',
+                'polarity': 'Negative',
+                'extracted_concern': 'body image',
+                'category': 'eating_disorder',
+                'intensity': 8,
+                'keywords': ['body image', 'affecting', 'daily']
+            },
+            {
+                'text': 'Fear of eating in public places',
+                'polarity': 'Negative',
+                'extracted_concern': 'social eating',
+                'category': 'eating_disorder',
+                'intensity': 7,
+                'keywords': ['eating', 'public', 'fear']
+            },
 
-        # Generate interactive dashboard
-        self.visualizer.generate_interactive_dashboard()
+            # Insomnia
+            {
+                'text': 'Haven\'t had a full night\'s sleep in weeks',
+                'polarity': 'Negative',
+                'extracted_concern': 'sleep deprivation',
+                'category': 'insomnia',
+                'intensity': 9,
+                'keywords': ['sleep', 'weeks', 'full night']
+            },
+            {
+                'text': 'Mind races when trying to fall asleep',
+                'polarity': 'Negative',
+                'extracted_concern': 'sleep difficulty',
+                'category': 'insomnia',
+                'intensity': 7,
+                'keywords': ['mind races', 'fall asleep']
+            },
+            {
+                'text': 'Sleep medication helping but worried about dependency',
+                'polarity': 'Neutral',
+                'extracted_concern': 'sleep treatment',
+                'category': 'insomnia',
+                'intensity': 6,
+                'keywords': ['sleep medication', 'dependency', 'worried']
+            },
+            {
+                'text': 'Trying CBT-I techniques for better sleep',
+                'polarity': 'Positive',
+                'extracted_concern': 'sleep improvement',
+                'category': 'insomnia',
+                'intensity': 5,
+                'keywords': ['CBT-I', 'techniques', 'sleep']
+            },
+            {
+                'text': 'Irregular work schedule destroying my sleep pattern',
+                'polarity': 'Negative',
+                'extracted_concern': 'sleep disruption',
+                'category': 'insomnia',
+                'intensity': 8,
+                'keywords': ['work schedule', 'sleep pattern', 'irregular']
+            },
 
-        print(f"Analysis outputs saved to {output_dir}/")
+            # Self-Esteem
+            {
+                'text': 'Feeling worthless and inadequate compared to peers',
+                'polarity': 'Negative',
+                'extracted_concern': 'low self-worth',
+                'category': 'self_esteem',
+                'intensity': 8,
+                'keywords': ['worthless', 'inadequate', 'peers']
+            },
+            {
+                'text': 'Starting to recognize my own achievements',
+                'polarity': 'Positive',
+                'extracted_concern': 'self-improvement',
+                'category': 'self_esteem',
+                'intensity': 4,
+                'keywords': ['achievements', 'recognize']
+            },
+            {
+                'text': 'Constant self-criticism affecting my confidence',
+                'polarity': 'Negative',
+                'extracted_concern': 'self-criticism',
+                'category': 'self_esteem',
+                'intensity': 7,
+                'keywords': ['self-criticism', 'confidence']
+            },
+            {
+                'text': 'Difficulty accepting compliments or praise',
+                'polarity': 'Negative',
+                'extracted_concern': 'self-acceptance',
+                'category': 'self_esteem',
+                'intensity': 6,
+                'keywords': ['compliments', 'praise', 'difficulty']
+            },
+            {
+                'text': 'Working on self-compassion with my therapist',
+                'polarity': 'Positive',
+                'extracted_concern': 'self-improvement',
+                'category': 'self_esteem',
+                'intensity': 5,
+                'keywords': ['self-compassion', 'therapist', 'working']
+            },
+
+            # Financial Stress
+            {
+                'text': 'Overwhelming debt keeping me up at night',
+                'polarity': 'Negative',
+                'extracted_concern': 'debt anxiety',
+                'category': 'financial_stress',
+                'intensity': 9,
+                'keywords': ['debt', 'overwhelming', 'night']
+            },
+            {
+                'text': 'Created a budget plan, feeling more in control',
+                'polarity': 'Positive',
+                'extracted_concern': 'financial management',
+                'category': 'financial_stress',
+                'intensity': 5,
+                'keywords': ['budget', 'control', 'plan']
+            },
+            {
+                'text': 'Constant worry about paying bills and rent',
+                'polarity': 'Negative',
+                'extracted_concern': 'financial worry',
+                'category': 'financial_stress',
+                'intensity': 8,
+                'keywords': ['bills', 'rent', 'worry']
+            },
+            {
+                'text': 'Job loss has depleted all my savings',
+                'polarity': 'Negative',
+                'extracted_concern': 'financial crisis',
+                'category': 'financial_stress',
+                'intensity': 9,
+                'keywords': ['job loss', 'savings', 'depleted']
+            },
+            {
+                'text': 'Started side hustle to manage financial pressure',
+                'polarity': 'Neutral',
+                'extracted_concern': 'financial coping',
+                'category': 'financial_stress',
+                'intensity': 6,
+                'keywords': ['side hustle', 'financial', 'pressure']
+            },
+
+            # Work Stress
+            {
+                'text': 'Burnout from excessive workload and overtime',
+                'polarity': 'Negative',
+                'extracted_concern': 'work burnout',
+                'category': 'work_stress',
+                'intensity': 8,
+                'keywords': ['burnout', 'workload', 'overtime']
+            },
+            {
+                'text': 'Toxic workplace environment affecting mental health',
+                'polarity': 'Negative',
+                'extracted_concern': 'workplace environment',
+                'category': 'work_stress',
+                'intensity': 9,
+                'keywords': ['toxic', 'workplace', 'mental health']
+            },
+            {
+                'text': 'Set better boundaries at work, feeling relieved',
+                'polarity': 'Positive',
+                'extracted_concern': 'work boundaries',
+                'category': 'work_stress',
+                'intensity': 4,
+                'keywords': ['boundaries', 'work', 'relieved']
+            },
+            {
+                'text': 'Performance review anxiety affecting sleep',
+                'polarity': 'Negative',
+                'extracted_concern': 'work performance',
+                'category': 'work_stress',
+                'intensity': 7,
+                'keywords': ['performance review', 'anxiety', 'sleep']
+            },
+            {
+                'text': 'Difficulty maintaining work-life balance',
+                'polarity': 'Negative',
+                'extracted_concern': 'work-life balance',
+                'category': 'work_stress',
+                'intensity': 7,
+                'keywords': ['work-life balance', 'difficulty']
+            },
+
+            # Family Issues
+            {
+                'text': 'Parents\' divorce causing emotional turmoil',
+                'polarity': 'Negative',
+                'extracted_concern': 'family conflict',
+                'category': 'family_issues',
+                'intensity': 8,
+                'keywords': ['divorce', 'parents', 'emotional']
+            },
+            {
+                'text': 'Sibling rivalry creating family tension',
+                'polarity': 'Negative',
+                'extracted_concern': 'family dynamics',
+                'category': 'family_issues',
+                'intensity': 6,
+                'keywords': ['sibling', 'rivalry', 'tension']
+            },
+            {
+                'text': 'Family therapy helping improve communication',
+                'polarity': 'Positive',
+                'extracted_concern': 'family improvement',
+                'category': 'family_issues',
+                'intensity': 5,
+                'keywords': ['family therapy', 'communication', 'improve']
+            },
+            {
+                'text': 'Caring for sick parent while managing work',
+                'polarity': 'Negative',
+                'extracted_concern': 'caregiver stress',
+                'category': 'family_issues',
+                'intensity': 8,
+                'keywords': ['caring', 'sick parent', 'work']
+            },
+            {
+                'text': 'Cultural differences causing family conflicts',
+                'polarity': 'Negative',
+                'extracted_concern': 'cultural issues',
+                'category': 'family_issues',
+                'intensity': 7,
+                'keywords': ['cultural', 'differences', 'conflicts']
+            },
+
+            # Addiction
+            {
+                'text': 'Struggling to overcome gaming addiction',
+                'polarity': 'Negative',
+                'extracted_concern': 'behavioral addiction',
+                'category': 'addiction',
+                'intensity': 7,
+                'keywords': ['gaming', 'addiction', 'struggling']
+            },
+            {
+                'text': 'Three months sober but facing strong urges',
+                'polarity': 'Neutral',
+                'extracted_concern': 'recovery challenge',
+                'category': 'addiction',
+                'intensity': 6,
+                'keywords': ['sober', 'urges', 'months']
+            },
+            {
+                'text': 'Support group helping maintain sobriety',
+                'polarity': 'Positive',
+                'extracted_concern': 'recovery support',
+                'category': 'addiction',
+                'intensity': 5,
+                'keywords': ['support group', 'sobriety', 'maintain']
+            },
+            {
+                'text': 'Social media addiction affecting productivity',
+                'polarity': 'Negative',
+                'extracted_concern': 'digital addiction',
+                'category': 'addiction',
+                'intensity': 7,
+                'keywords': ['social media', 'addiction', 'productivity']
+            },
+            {
+                'text': 'Relapsed after six months, feeling ashamed',
+                'polarity': 'Negative',
+                'extracted_concern': 'relapse',
+                'category': 'addiction',
+                'intensity': 9,
+                'keywords': ['relapsed', 'months', 'ashamed']
+            },
+
+            # PTSD/Trauma
+            {
+                'text': 'Flashbacks getting more intense lately',
+                'polarity': 'Negative',
+                'extracted_concern': 'trauma symptoms',
+                'category': 'ptsd_trauma',
+                'intensity': 9,
+                'keywords': ['flashbacks', 'intense']
+            },
+            {
+                'text': 'EMDR therapy helping process trauma',
+                'polarity': 'Positive',
+                'extracted_concern': 'trauma treatment',
+                'category': 'ptsd_trauma',
+                'intensity': 5,
+                'keywords': ['EMDR', 'therapy', 'trauma']
+            },
+            {
+                'text': 'Nightmares about past trauma affecting sleep',
+                'polarity': 'Negative',
+                'extracted_concern': 'trauma nightmares',
+                'category': 'ptsd_trauma',
+                'intensity': 8,
+                'keywords': ['nightmares', 'trauma', 'sleep']
+            },
+            {
+                'text': 'Triggered by loud noises and crowds',
+                'polarity': 'Negative',
+                'extracted_concern': 'trauma triggers',
+                'category': 'ptsd_trauma',
+                'intensity': 7,
+                'keywords': ['triggered', 'loud noises', 'crowds']
+            },
+            {
+                'text': 'Learning grounding techniques for flashbacks',
+                'polarity': 'Neutral',
+                'extracted_concern': 'coping strategies',
+                'category': 'ptsd_trauma',
+                'intensity': 6,
+                'keywords': ['grounding', 'techniques', 'flashbacks']
+            },
+
+            # Identity Issues
+            {
+                'text': 'Questioning my identity and life purpose',
+                'polarity': 'Negative',
+                'extracted_concern': 'identity crisis',
+                'category': 'identity_issues',
+                'intensity': 7,
+                'keywords': ['questioning', 'identity', 'purpose']
+            },
+            {
+                'text': 'Struggling with cultural identity between two worlds',
+                'polarity': 'Negative',
+                'extracted_concern': 'cultural identity',
+                'category': 'identity_issues',
+                'intensity': 7,
+                'keywords': ['cultural', 'identity', 'struggling']
+            },
+            {
+                'text': 'Starting to accept and embrace who I am',
+                'polarity': 'Positive',
+                'extracted_concern': 'self-acceptance',
+                'category': 'identity_issues',
+                'intensity': 4,
+                'keywords': ['accept', 'embrace', 'who I am']
+            },
+            {
+                'text': 'Gender identity exploration causing family tension',
+                'polarity': 'Negative',
+                'extracted_concern': 'gender identity',
+                'category': 'identity_issues',
+                'intensity': 8,
+                'keywords': ['gender', 'identity', 'family']
+            },
+            {
+                'text': 'Finding community with similar identity struggles',
+                'polarity': 'Positive',
+                'extracted_concern': 'identity support',
+                'category': 'identity_issues',
+                'intensity': 5,
+                'keywords': ['community', 'identity', 'similar']
+            },
+
+            # Cultural Adjustment
+            {
+                'text': 'Feeling isolated in new country, missing home',
+                'polarity': 'Negative',
+                'extracted_concern': 'cultural isolation',
+                'category': 'cultural_adjustment',
+                'intensity': 8,
+                'keywords': ['isolated', 'new country', 'home']
+            },
+            {
+                'text': 'Language barrier making it hard to connect',
+                'polarity': 'Negative',
+                'extracted_concern': 'communication barrier',
+                'category': 'cultural_adjustment',
+                'intensity': 7,
+                'keywords': ['language barrier', 'connect']
+            },
+            {
+                'text': 'Made first local friend, feeling more settled',
+                'polarity': 'Positive',
+                'extracted_concern': 'cultural integration',
+                'category': 'cultural_adjustment',
+                'intensity': 4,
+                'keywords': ['local friend', 'settled']
+            },
+            {
+                'text': 'Cultural differences at work causing stress',
+                'polarity': 'Negative',
+                'extracted_concern': 'workplace culture',
+                'category': 'cultural_adjustment',
+                'intensity': 6,
+                'keywords': ['cultural differences', 'work', 'stress']
+            },
+            {
+                'text': 'Starting to appreciate new cultural experiences',
+                'polarity': 'Positive',
+                'extracted_concern': 'cultural adaptation',
+                'category': 'cultural_adjustment',
+                'intensity': 5,
+                'keywords': ['appreciate', 'cultural', 'experiences']
+            },
+
+            # Grief/Loss
+            {
+                'text': 'Can\'t cope with the loss of my parent',
+                'polarity': 'Negative',
+                'extracted_concern': 'grief processing',
+                'category': 'grief_loss',
+                'intensity': 9,
+                'keywords': ['loss', 'parent', 'cope']
+            },
+            {
+                'text': 'First holiday season without them is unbearable',
+                'polarity': 'Negative',
+                'extracted_concern': 'holiday grief',
+                'category': 'grief_loss',
+                'intensity': 9,
+                'keywords': ['holiday', 'without', 'unbearable']
+            },
+            {
+                'text': 'Grief support group helping me process loss',
+                'polarity': 'Neutral',
+                'extracted_concern': 'grief support',
+                'category': 'grief_loss',
+                'intensity': 6,
+                'keywords': ['grief', 'support group', 'process']
+            },
+            {
+                'text': 'Finding ways to honor their memory',
+                'polarity': 'Positive',
+                'extracted_concern': 'memorial coping',
+                'category': 'grief_loss',
+                'intensity': 5,
+                'keywords': ['honor', 'memory', 'ways']
+            },
+            {
+                'text': 'Unexpected triggers bringing back grief waves',
+                'polarity': 'Negative',
+                'extracted_concern': 'grief triggers',
+                'category': 'grief_loss',
+                'intensity': 8,
+                'keywords': ['triggers', 'grief', 'waves']
+            },
+
+            # Burnout
+            {
+                'text': 'Complete physical and emotional exhaustion',
+                'polarity': 'Negative',
+                'extracted_concern': 'severe burnout',
+                'category': 'burnout',
+                'intensity': 9,
+                'keywords': ['exhaustion', 'physical', 'emotional']
+            },
+            {
+                'text': 'Taking a sabbatical to recover from burnout',
+                'polarity': 'Neutral',
+                'extracted_concern': 'burnout recovery',
+                'category': 'burnout',
+                'intensity': 6,
+                'keywords': ['sabbatical', 'recover', 'burnout']
+            },
+            {
+                'text': 'Started setting boundaries to prevent burnout',
+                'polarity': 'Positive',
+                'extracted_concern': 'burnout prevention',
+                'category': 'burnout',
+                'intensity': 5,
+                'keywords': ['boundaries', 'prevent', 'burnout']
+            },
+            {
+                'text': 'Can\'t focus or be productive anymore',
+                'polarity': 'Negative',
+                'extracted_concern': 'cognitive burnout',
+                'category': 'burnout',
+                'intensity': 8,
+                'keywords': ['focus', 'productive', 'anymore']
+            },
+            {
+                'text': 'Feeling disconnected from work and colleagues',
+                'polarity': 'Negative',
+                'extracted_concern': 'work disconnection',
+                'category': 'burnout',
+                'intensity': 7,
+                'keywords': ['disconnected', 'work', 'colleagues']
+            },
+
+            # Positive Outlook
+            {
+                'text': 'Therapy and medication finally showing results',
+                'polarity': 'Positive',
+                'extracted_concern': 'treatment success',
+                'category': 'positive_outlook',
+                'intensity': 4,
+                'keywords': ['therapy', 'medication', 'results']
+            },
+            {
+                'text': 'Learning to appreciate small daily victories',
+                'polarity': 'Positive',
+                'extracted_concern': 'gratitude practice',
+                'category': 'positive_outlook',
+                'intensity': 3,
+                'keywords': ['appreciate', 'victories', 'daily']
+            },
+            {
+                'text': 'Started journaling and seeing patterns improve',
+                'polarity': 'Positive',
+                'extracted_concern': 'self-improvement',
+                'category': 'positive_outlook',
+                'intensity': 4,
+                'keywords': ['journaling', 'patterns', 'improve']
+            },
+            {
+                'text': 'Finding hope and strength in support system',
+                'polarity': 'Positive',
+                'extracted_concern': 'support appreciation',
+                'category': 'positive_outlook',
+                'intensity': 3,
+                'keywords': ['hope', 'strength', 'support']
+            },
+            {
+                'text': 'Meditation practice helping maintain balance',
+                'polarity': 'Positive',
+                'extracted_concern': 'wellness practice',
+                'category': 'positive_outlook',
+                'intensity': 3,
+                'keywords': ['meditation', 'balance', 'practice']
+            }
+        ]
+
+    def train_system(self):
+        self.analyzer.train(self.training_data)
+
+# FastAPI endpoints
+
+
+@app.post("/users/", response_model=dict)
+async def create_user(user: User):
+    """Create a new user in the system"""
+    try:
+        db_manager.add_user(user.email, user.name)
+        return {"message": "User created successfully", "email": user.email}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.post("/chat/{email}", response_model=dict)
+async def chat(email: str, message: Message):
+    """Process a chat message and return analysis with model response"""
+    try:
+        # Initialize the mental health system if not already done
+        system = MentalHealthAnalysisSystem()
+
+        # Analyze message
+        analysis = system.analyzer.analyze_text(
+            message.text,
+            datetime.now()
+        )
+
+        # Get model response
+        model_response = await ollama_manager.get_response(email, message.text)
+
+        # Save to database
+        db_manager.add_conversation(
+            email, message.text, analysis, model_response)
+
+        return {
+            "message": message.text,
+            "analysis": analysis,
+            "model_response": model_response
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@app.get("/history/{email}", response_model=ConversationHistory)
+async def get_history(email: str):
+    """Get conversation history for a user"""
+    try:
+        history = db_manager.get_conversation_history(email)
+        return ConversationHistory(messages=history)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/close_conversation/{email}")
+async def close_conversation(email: str):
+    """Close a user's conversation session"""
+    try:
+        ollama_manager.close_conversation(email)
+        return {"message": "Conversation closed successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/analyze_trends/{email}")
+async def analyze_trends(email: str):
+    """Analyze trends in user's conversation history"""
+    try:
+        history = db_manager.get_conversation_history(email)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        # Convert history to DataFrame
+        df = pd.DataFrame(history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+        # Calculate trends
+        sentiment_trend = df.apply(
+            lambda x: json.loads(x['analysis'])[
+                'sentiment']['scores']['compound']
+            if isinstance(x['analysis'], str)
+            else x['analysis']['sentiment']['scores']['compound'],
+            axis=1
+        ).mean()
+
+        categories = df.apply(
+            lambda x: json.loads(x['analysis'])['category']['primary']
+            if isinstance(x['analysis'], str)
+            else x['analysis']['category']['primary'],
+            axis=1
+        ).value_counts().to_dict()
+
+        return {
+            "total_messages": len(history),
+            "average_sentiment": float(sentiment_trend),
+            "category_distribution": categories,
+            "time_span": {
+                "start": df['timestamp'].min().isoformat(),
+                "end": df['timestamp'].max().isoformat()
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Shutdown event handler
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on shutdown"""
+    # Close all active conversations
+    for email in list(ollama_manager.conversations.keys()):
+        ollama_manager.close_conversation(email)
+
+
+# Utility functions for analysis and reporting
+def generate_user_report(email: str) -> dict:
+    """Generate a comprehensive report for a user"""
+    history = db_manager.get_conversation_history(email)
+    if not history:
+        return {"message": "No conversation history found"}
+
+    df = pd.DataFrame(history)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+    # Analyze sentiment progression
+    df['sentiment'] = df.apply(
+        lambda x: json.loads(x['analysis'])['sentiment']['scores']['compound']
+        if isinstance(x['analysis'], str)
+        else x['analysis']['sentiment']['scores']['compound'],
+        axis=1
+    )
+
+    # Analyze categories
+    df['category'] = df.apply(
+        lambda x: json.loads(x['analysis'])['category']['primary']
+        if isinstance(x['analysis'], str)
+        else x['analysis']['category']['primary'],
+        axis=1
+    )
+
+    # Calculate weekly averages
+    weekly_stats = df.set_index('timestamp').resample('W').agg({
+        'sentiment': 'mean',
+        'category': lambda x: x.mode()[0] if not x.empty else None
+    })
+
+    return {
+        "overview": {
+            "total_conversations": len(history),
+            "time_period": {
+                "start": df['timestamp'].min().isoformat(),
+                "end": df['timestamp'].max().isoformat()
+            },
+            "average_sentiment": float(df['sentiment'].mean())
+        },
+        "weekly_progression": weekly_stats.to_dict(orient='index'),
+        "category_distribution": df['category'].value_counts().to_dict(),
+        "sentiment_progression": {
+            "trend": "Improving" if df['sentiment'].iloc[-5:].mean() > df['sentiment'].iloc[:5].mean() else "Declining",
+            "variance": float(df['sentiment'].var())
+        }
+    }
+
+# Main execution
 
 
 def main():
-    # Initialize the system
-    system = MentalHealthAnalysisSystem()
+    """Main function to run the application"""
+    import uvicorn
 
-    # Train the system with provided training data
-    system.train_system(training_data)
+    # Configuration
+    host = "0.0.0.0"
+    port = 8000
 
-    # Process timeline data
-    # Option 1: Use provided timeline entries
-    # system.process_timeline(timeline_entries)
+    # Print startup message
+    print(f"""
+    ===============================================
+    Mental Health Analysis System
+    ===============================================
 
-    # Option 2: Generate sample timeline data
-    sample_timeline = create_sample_timeline_data(30)
-    system.process_timeline(sample_timeline)
+    Server starting up...
 
-    # Generate comprehensive report
-    system.generate_comprehensive_report()
+    Available endpoints:
+    - POST   /users/                  Create new user
+    - POST   /chat/{{email}}           Send message
+    - GET    /history/{{email}}        Get chat history
+    - POST   /close_conversation/{{email}} Close session
+    - GET    /analyze_trends/{{email}} Get analysis
 
-    # Example of real-time analysis
-    print("\nReal-time Analysis Example:")
-    result = system.analyzer.analyze_text(
-        "i have exams next week and im so tired i am unable to understand anything im so scared",
-        datetime.now()
-    )
+    Server will be available at:
+    http://{host}:{port}
 
-    print("\nAnalysis Result:")
-    print(f"Sentiment: {result['sentiment']['label']}")
-    print(f"Category: {result['category']['primary']}")
-    print(f"Intensity: {result['intensity']['level']
-                        } ({result['intensity']['score']})")
-    print(f"Keywords: {[k['text'] for k in result['keywords']]}")
+    Documentation will be available at:
+    http://{host}:{port}/docs
 
-    print("---")
+    Press Ctrl+C to stop the server
+    ===============================================
+    """)
 
-    print(result)
+    # Run server
+    uvicorn.run(app, host=host, port=port)
 
-    print("---")
+# Example usage
 
-    print(sorted(result['category']['all_probabilities'].items(
-    ), key=lambda x: x[1], reverse=True))
+
+def example_usage():
+    """Example of how to use the system"""
+    async def run_example():
+        # Create a user
+        user_email = "example@test.com"
+        user = User(email=user_email, name="Test User")
+        await create_user(user)
+
+        # Send some messages
+        messages = [
+            "I've been feeling anxious about work lately",
+            "Started meditation today, feeling a bit better",
+            "Having trouble sleeping due to stress",
+        ]
+
+        for message_text in messages:
+            message = Message(text=message_text)
+            response = await chat(user_email, message)
+            print(f"\nMessage: {message_text}")
+            print(f"Analysis: {json.dumps(response['analysis'], indent=2)}")
+            print(f"Model Response: {response['model_response']}")
+
+        # Get history
+        history = await get_history(user_email)
+        print("\nConversation History:")
+        print(json.dumps(history.dict(), indent=2))
+
+        # Get trends
+        trends = await analyze_trends(user_email)
+        print("\nTrends Analysis:")
+        print(json.dumps(trends, indent=2))
+
+        # Close conversation
+        await close_conversation(user_email)
+
+    # Run the example
+    asyncio.run(run_example())
 
 
 if __name__ == "__main__":
-    main()
+    # Choose whether to run the server or example usage
+    import sys
 
-# Additional utility functions for specific analyses
+    if len(sys.argv) > 1 and sys.argv[1] == "--example":
+        example_usage()
+    else:
+        main()
 
+"""
+To use this system:
 
-def analyze_category_progression(analyzer, category):
-    """Analyze progression of a specific mental health category"""
-    category_entries = [
-        entry for entry in analyzer.timeline_data
-        if entry['category']['primary'] == category
-    ]
+1. Install required packages:
+   pip install fastapi uvicorn pydantic[email] sqlite3 torch spacy vaderSentiment \
+               scikit-learn pandas numpy matplotlib seaborn plotly
 
-    if not category_entries:
-        return None
+2. Download spaCy model:
+   python -m spacy download en_core_web_sm
 
-    return {
-        'total_entries': len(category_entries),
-        'average_intensity': np.mean([e['intensity']['score'] for e in category_entries]),
-        'sentiment_progression': [e['sentiment']['scores']['compound'] for e in category_entries],
-        'timestamps': [e['timestamp'] for e in category_entries]
-    }
+3. Install Ollama and download the llama2 model:
+   ollama pull llama2
 
+4. Run the server:
+   python script.py
 
-def generate_weekly_summary(analyzer):
-    """Generate weekly summary of mental health patterns"""
-    df = pd.DataFrame(analyzer.timeline_data)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df['week'] = df['timestamp'].dt.isocalendar().week
+   Or run the example:
+   python script.py --example
 
-    weekly_stats = df.groupby('week').agg({
-        'sentiment': lambda x: np.mean([i['scores']['compound'] for i in x]),
-        'intensity': lambda x: np.mean([i['score'] for i in x]),
-        'category': lambda x: pd.Series([i['primary'] for i in x]).mode()[0]
-    }).reset_index()
+5. Access the API documentation:
+   http://localhost:8000/docs
 
-    return weekly_stats
+Example curl commands:
 
+# Create a user
+curl -X POST "http://localhost:8000/users/" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "user@example.com", "name": "John Doe"}'
 
-def export_to_excel(analyzer, filename='mental_health_analysis.xlsx'):
-    """Export detailed analysis to Excel with multiple sheets"""
-    with pd.ExcelWriter(filename) as writer:
-        # Daily entries
-        daily_df = pd.DataFrame(analyzer.timeline_data)
-        daily_df['timestamp'] = pd.to_datetime(daily_df['timestamp'])
-        daily_df.to_excel(writer, sheet_name='Daily_Entries', index=False)
+# Send a message
+curl -X POST "http://localhost:8000/chat/user@example.com" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "I am feeling anxious today"}'
 
-        # Weekly summary
-        weekly_summary = generate_weekly_summary(analyzer)
-        weekly_summary.to_excel(
-            writer, sheet_name='Weekly_Summary', index=False)
+# Get conversation history
+curl "http://localhost:8000/history/user@example.com"
 
-        # Category analysis
-        category_stats = pd.DataFrame([
-            analyze_category_progression(analyzer, cat)
-            for cat in MentalHealthCategories.get_all_categories()
-        ])
-        category_stats.to_excel(
-            writer, sheet_name='Category_Analysis', index=False)
+# Get trends analysis
+curl "http://localhost:8000/analyze_trends/user@example.com"
 
-# Example usage of additional analyses
-
-
-def run_advanced_analysis():
-    """Run advanced analysis on the mental health data"""
-
-    system = MentalHealthAnalysisSystem()
-    system.train_system(training_data)
-    system.process_timeline(create_sample_timeline_data())
-
-    # Generate weekly summary
-    weekly_summary = generate_weekly_summary(system.analyzer)
-    print("\nWeekly Summary:")
-    print(weekly_summary)
-
-    # Analyze specific category
-    anxiety_progression = analyze_category_progression(
-        system.analyzer, 'anxiety')
-    print("\nAnxiety Progression Analysis:")
-    print(anxiety_progression)
-
-    # Export detailed Excel report
-    export_to_excel(system.analyzer)
-
-# Run advanced analysis if needed
-# run_advanced_analysis()
+# Close conversation
+curl -X POST "http://localhost:8000/close_conversation/user@example.com"
+"""

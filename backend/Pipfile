@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 plotly = "*"
 seaborn = "*"
+fastapi = "*"
+uvicorn = "*"
 
 [dev-packages]
 
