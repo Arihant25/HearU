@@ -48,6 +48,7 @@ While we have made HearU as complete and user-friendly as possible within the pr
 
 The following datasets are recommended and were used to train and test the application’s capabilities in mental health analysis:
 
+- [Sample Data Set from Detailed Problem Set](https://docs.google.com/spreadsheets/d/1P_SfB-j-fu4kqXpq-QT2b0Ux-1yZvaFy9q0p2UJrfd4/edit?gid=496054814#gid=496054814)
 - [Reddit Mental Health Data](https://www.kaggle.com/datasets/neelghoshal/reddit-mental-health-data)
 - [Mental Health Corpus](https://www.kaggle.com/datasets/reihanenamdari/mental-health-corpus)
 - [GoEmotions Dataset](https://github.com/google-research/google-research/tree/master/goemotions/data/full_dataset)
