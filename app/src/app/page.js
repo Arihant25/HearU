@@ -1,55 +1,45 @@
 import Image from "next/image";
-import Link from "next/link";
+import Header from "../components/Header";
 
 export default function Home() {
   return (
-    <div className="h-screen flex flex-row font-sans">
-      <div className="md:w-1/2 bg-custom-blue-500 hidden md:flex items-center justify-center ">
-        <Image
-          src="/logo.png"
-          width={500}
-          height={500}
-          alt="Picture of the author"
-        />
-      </div>
-      <div className="md:w-1/2 md:bg-white text-black p-4 xbg-custom-blue-500">
-        <nav className=" border-violet-200 flex flex-row justify-between items-center">
-          <div className="flex flex-row gap-2">
-            <Link href="">home</Link>
-            <Link href="">about</Link>
-            <Link href="">services</Link>
-            <Link href="">blogs</Link>
+    <div className="bg-bg-dark text-text-light min-h-screen flex flex-col font-sans">
+  
+      {/* Header */}
+      <Header />
+
+      {/* Main Section */}
+      <main className="flex-grow flex flex-col md:flex-row items-center px-4 py-4 sm:px-8 sm:py-8 md:px-12 md:py-16 lg:px-20 lg:py-20">
+        {/* Left Content */}
+        <div className="md:w-1/2 space-y-8">
+          <h2 className="text-5xl font-extrabold leading-snug">
+            Empower Your Mental Well-being
+          </h2>
+          <p className="text-xl text-text-muted text-justify" style={{ width: '100%' }}>
+            At hearU, we offer a secure space for self-reflection, support, and mental well-being insights. Join us in taking a step towards understanding and managing your mental health with confidence.
+          </p>
+          <div className="flex justify-center">
+            <button className="mt-6 bg-primary-green text-bg-dark py-3 px-8 rounded-full hover:bg-primary-blue gradient-border">
+              Get Started
+            </button>
           </div>
-          <button className="rounded md:bg-custom-blue-500 md:text-white bg-white p-2  ">
-            Sign in
-          </button>
-        </nav>
-
-       
-
-        <div className=" h-5/6 flex flex-row items-center mt-5">
-
-
-        <div className="flex flex-col items-center justify-center md:mt-24 md:w-1/2 mx-auto">
-        
-
-
-
-
-          <h1 className="text-3xl font-bold text-center">Welcome to hearU</h1>
-          <h3 className="text-sm font-light text-center">Your journey to mental well-being begins here.</h3>
-          <p className="text-center mt-10">At hearYou, we believe that everyone deserves a safe space to express themselves, be understood, and find comfort. Our platform is designed to provide you with the support and tools you need to navigate life's challenges and improve your mental health.</p>
-          <Image
-          src="/logo.png"
-          width={200}
-          height={200}
-          alt="Picture of the author"
-          className="m-auto mt-5 md:hidden"
-        />
-          <button className="rounded md:bg-custom-blue-500 p-2 w-full mt-10 md:text-white bg-white">Get Started</button>
         </div>
-      </div>
+
+        {/* Right Content*/}
+        <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
+          <Image src="/logo.png" 
+            width={1000} 
+            height={400} 
+            alt="Mental Well-being Illustration" 
+            style={{ width: '29vw', height: '21vw' }} 
+          />
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-bg-accent py-6 text-center">
+        <p>© 2024 hearU. All rights reserved.</p>
+      </footer>
     </div>
-        </div>
   );
 }
