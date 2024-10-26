@@ -1,0 +1,31 @@
+timestamp,text,sentiment_label,sentiment_score,category,intensity_score,keywords
+2024-09-26 20:30:51.872263,Feeling very anxious about everything today,Negative,-0.2006,anxiety,3.5,today
+2024-09-27 20:30:51.872263,Struggling with sleep again,Negative,-0.4215,identity_issues,2.1,sleep
+2024-09-28 20:30:51.872263,Making progress with my anxiety management,Positive,0.2732,anxiety,1.4,progress
+2024-09-29 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-09-30 20:30:51.872263,Feeling down and unmotivated,Negative,-0.2263,burnout,1.1,
+2024-10-01 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-10-02 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-10-03 20:30:51.872263,Feeling very anxious about everything today,Negative,-0.2006,anxiety,3.5,today
+2024-10-04 20:30:51.872263,Making progress with my anxiety management,Positive,0.2732,anxiety,1.4,progress
+2024-10-05 20:30:51.872263,"Had a good therapy session, feeling hopeful",Positive,0.7717,depression,3.9,hope
+2024-10-06 20:30:51.872263,Feeling very anxious about everything today,Negative,-0.2006,anxiety,3.5,today
+2024-10-07 20:30:51.872263,Struggling with sleep again,Negative,-0.4215,identity_issues,2.1,sleep
+2024-10-08 20:30:51.872263,Family issues causing stress,Negative,-0.4215,family_issues,2.1,"family, family"
+2024-10-09 20:30:51.872263,Feeling more confident after counseling,Positive,0.6115,relationship_issues,3.1,
+2024-10-10 20:30:51.872263,Making progress with my anxiety management,Positive,0.2732,anxiety,1.4,progress
+2024-10-11 20:30:51.872263,Feeling down and unmotivated,Negative,-0.2263,burnout,1.1,
+2024-10-12 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-10-13 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-10-14 20:30:51.872263,Worried about my health constantly,Negative,-0.296,academic_stress,1.5,health
+2024-10-15 20:30:51.872263,"Started a new exercise routine, feeling better",Positive,0.5267,cultural_adjustment,2.6,
+2024-10-16 20:30:51.872263,"Started a new exercise routine, feeling better",Positive,0.5267,cultural_adjustment,2.6,
+2024-10-17 20:30:51.872263,Feeling very anxious about everything today,Negative,-0.2006,anxiety,3.5,today
+2024-10-18 20:30:51.872263,Making progress with my anxiety management,Positive,0.2732,anxiety,1.4,progress
+2024-10-19 20:30:51.872263,Making progress with my anxiety management,Positive,0.2732,anxiety,1.4,progress
+2024-10-20 20:30:51.872263,Struggling with sleep again,Negative,-0.4215,identity_issues,2.1,sleep
+2024-10-21 20:30:51.872263,"Had a good therapy session, feeling hopeful",Positive,0.7717,depression,3.9,hope
+2024-10-22 20:30:51.872263,Having trouble concentrating at work,Negative,-0.4019,social_anxiety,2.0,work
+2024-10-23 20:30:51.872263,Struggling with sleep again,Negative,-0.4215,identity_issues,2.1,sleep
+2024-10-24 20:30:51.872263,"Had a good therapy session, feeling hopeful",Positive,0.7717,depression,3.9,hope
+2024-10-25 20:30:51.872263,"Had a good therapy session, feeling hopeful",Positive,0.7717,depression,3.9,hope

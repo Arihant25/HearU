@@ -1,0 +1,18 @@
+Mental Health Analysis Summary Report
+========================================
+
+Overview:
+Total Entries: 30
+Date Range: 2024-09-26 20:30:51.872263 to 2024-10-25 20:30:51.872263
+Average Intensity: 2.29
+
+Category Distribution:
+anxiety: 9 entries
+academic_stress: 6 entries
+identity_issues: 4 entries
+depression: 4 entries
+burnout: 2 entries
+cultural_adjustment: 2 entries
+family_issues: 1 entries
+relationship_issues: 1 entries
+social_anxiety: 1 entries

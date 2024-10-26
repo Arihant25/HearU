@@ -1,0 +1,1477 @@
+[
+  {
+    "text": "Feeling very anxious about everything today",
+    "timestamp": "2024-09-26 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.294,
+        "neu": 0.513,
+        "pos": 0.192,
+        "compound": -0.2006
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.08421751149498759,
+      "all_probabilities": {
+        "academic_stress": 0.05181749572828871,
+        "addiction": 0.04729727199496542,
+        "anxiety": 0.08421751149498759,
+        "burnout": 0.04746132978080795,
+        "career_confusion": 0.05098353477155364,
+        "cultural_adjustment": 0.048724063758347806,
+        "depression": 0.05755594809515237,
+        "eating_disorder": 0.0518211913297213,
+        "family_issues": 0.045235718833757786,
+        "financial_stress": 0.04941039995855829,
+        "grief_loss": 0.04499324068099574,
+        "health_anxiety": 0.046657032271741075,
+        "identity_issues": 0.045067565341462903,
+        "insomnia": 0.047454607681668814,
+        "positive_outlook": 0.04513661982273906,
+        "ptsd_trauma": 0.047866329965748064,
+        "relationship_issues": 0.049117649021363084,
+        "self_esteem": 0.04710242950246676,
+        "social_anxiety": 0.04489103396127816,
+        "work_stress": 0.04718902600439402
+      }
+    },
+    "keywords": [
+      {
+        "text": "today",
+        "type": "named_entity",
+        "label": "DATE"
+      }
+    ],
+    "intensity": {
+      "score": 3.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Struggling with sleep again",
+    "timestamp": "2024-09-27 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.483,
+        "neu": 0.517,
+        "pos": 0.0,
+        "compound": -0.4215
+      }
+    },
+    "category": {
+      "primary": "identity_issues",
+      "confidence": 0.06873656967246941,
+      "all_probabilities": {
+        "academic_stress": 0.0492172607414176,
+        "addiction": 0.05263148393673275,
+        "anxiety": 0.05091870557682047,
+        "burnout": 0.04565568683994141,
+        "career_confusion": 0.04538904561857417,
+        "cultural_adjustment": 0.0455372118244895,
+        "depression": 0.045360981543328176,
+        "eating_disorder": 0.048834689000912056,
+        "family_issues": 0.045706999783216504,
+        "financial_stress": 0.04548191028258379,
+        "grief_loss": 0.04875112305129027,
+        "health_anxiety": 0.048437702394551925,
+        "identity_issues": 0.06873656967246941,
+        "insomnia": 0.06013342983921005,
+        "positive_outlook": 0.045624565571885774,
+        "ptsd_trauma": 0.05024381204265636,
+        "relationship_issues": 0.058349143141937745,
+        "self_esteem": 0.049005740286556944,
+        "social_anxiety": 0.04542014000893377,
+        "work_stress": 0.0505637988424912
+      }
+    },
+    "keywords": [
+      {
+        "text": "sleep",
+        "type": "mental_health_term",
+        "category": "insomnia"
+      }
+    ],
+    "intensity": {
+      "score": 2.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Making progress with my anxiety management",
+    "timestamp": "2024-09-28 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.2,
+        "neu": 0.471,
+        "pos": 0.329,
+        "compound": 0.2732
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.06325574583565277,
+      "all_probabilities": {
+        "academic_stress": 0.046585704550789205,
+        "addiction": 0.04527015433252901,
+        "anxiety": 0.06325574583565277,
+        "burnout": 0.045238014965546997,
+        "career_confusion": 0.0479909978098343,
+        "cultural_adjustment": 0.049735569730956254,
+        "depression": 0.049382234818780124,
+        "eating_disorder": 0.049282526010663665,
+        "family_issues": 0.04530497673860579,
+        "financial_stress": 0.046705896089443,
+        "grief_loss": 0.049107448750774385,
+        "health_anxiety": 0.04880498758014942,
+        "identity_issues": 0.05187569300251136,
+        "insomnia": 0.046787385614084,
+        "positive_outlook": 0.04519741430328249,
+        "ptsd_trauma": 0.04530683974206974,
+        "relationship_issues": 0.05800038088885866,
+        "self_esteem": 0.0584379107822726,
+        "social_anxiety": 0.05804082574107505,
+        "work_stress": 0.049689292712120935
+      }
+    },
+    "keywords": [
+      {
+        "text": "progress",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 1.4,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-09-29 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling down and unmotivated",
+    "timestamp": "2024-09-30 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.407,
+        "neu": 0.339,
+        "pos": 0.254,
+        "compound": -0.2263
+      }
+    },
+    "category": {
+      "primary": "burnout",
+      "confidence": 0.05894108233714053,
+      "all_probabilities": {
+        "academic_stress": 0.05658998533109589,
+        "addiction": 0.0469202153068058,
+        "anxiety": 0.05423766277840803,
+        "burnout": 0.05894108233714053,
+        "career_confusion": 0.05072746497163457,
+        "cultural_adjustment": 0.05119286453403447,
+        "depression": 0.055562179908180985,
+        "eating_disorder": 0.05668847155162903,
+        "family_issues": 0.04160253906125114,
+        "financial_stress": 0.05150529325967228,
+        "grief_loss": 0.04147089942234795,
+        "health_anxiety": 0.04986038033923485,
+        "identity_issues": 0.05070545049066856,
+        "insomnia": 0.04147294934539719,
+        "positive_outlook": 0.05488231770553071,
+        "ptsd_trauma": 0.04625630649156001,
+        "relationship_issues": 0.04624294408701107,
+        "self_esteem": 0.051642281715539445,
+        "social_anxiety": 0.04141532494855344,
+        "work_stress": 0.052083386414304156
+      }
+    },
+    "keywords": [],
+    "intensity": {
+      "score": 1.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-10-01 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-10-02 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling very anxious about everything today",
+    "timestamp": "2024-10-03 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.294,
+        "neu": 0.513,
+        "pos": 0.192,
+        "compound": -0.2006
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.08421751149498759,
+      "all_probabilities": {
+        "academic_stress": 0.05181749572828871,
+        "addiction": 0.04729727199496542,
+        "anxiety": 0.08421751149498759,
+        "burnout": 0.04746132978080795,
+        "career_confusion": 0.05098353477155364,
+        "cultural_adjustment": 0.048724063758347806,
+        "depression": 0.05755594809515237,
+        "eating_disorder": 0.0518211913297213,
+        "family_issues": 0.045235718833757786,
+        "financial_stress": 0.04941039995855829,
+        "grief_loss": 0.04499324068099574,
+        "health_anxiety": 0.046657032271741075,
+        "identity_issues": 0.045067565341462903,
+        "insomnia": 0.047454607681668814,
+        "positive_outlook": 0.04513661982273906,
+        "ptsd_trauma": 0.047866329965748064,
+        "relationship_issues": 0.049117649021363084,
+        "self_esteem": 0.04710242950246676,
+        "social_anxiety": 0.04489103396127816,
+        "work_stress": 0.04718902600439402
+      }
+    },
+    "keywords": [
+      {
+        "text": "today",
+        "type": "named_entity",
+        "label": "DATE"
+      }
+    ],
+    "intensity": {
+      "score": 3.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Making progress with my anxiety management",
+    "timestamp": "2024-10-04 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.2,
+        "neu": 0.471,
+        "pos": 0.329,
+        "compound": 0.2732
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.06325574583565277,
+      "all_probabilities": {
+        "academic_stress": 0.046585704550789205,
+        "addiction": 0.04527015433252901,
+        "anxiety": 0.06325574583565277,
+        "burnout": 0.045238014965546997,
+        "career_confusion": 0.0479909978098343,
+        "cultural_adjustment": 0.049735569730956254,
+        "depression": 0.049382234818780124,
+        "eating_disorder": 0.049282526010663665,
+        "family_issues": 0.04530497673860579,
+        "financial_stress": 0.046705896089443,
+        "grief_loss": 0.049107448750774385,
+        "health_anxiety": 0.04880498758014942,
+        "identity_issues": 0.05187569300251136,
+        "insomnia": 0.046787385614084,
+        "positive_outlook": 0.04519741430328249,
+        "ptsd_trauma": 0.04530683974206974,
+        "relationship_issues": 0.05800038088885866,
+        "self_esteem": 0.0584379107822726,
+        "social_anxiety": 0.05804082574107505,
+        "work_stress": 0.049689292712120935
+      }
+    },
+    "keywords": [
+      {
+        "text": "progress",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 1.4,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Had a good therapy session, feeling hopeful",
+    "timestamp": "2024-10-05 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.342,
+        "pos": 0.658,
+        "compound": 0.7717
+      }
+    },
+    "category": {
+      "primary": "depression",
+      "confidence": 0.05984899367539583,
+      "all_probabilities": {
+        "academic_stress": 0.048670486014246,
+        "addiction": 0.04878346838081994,
+        "anxiety": 0.05283858662845032,
+        "burnout": 0.04906540424593246,
+        "career_confusion": 0.050843346858097924,
+        "cultural_adjustment": 0.051182113023793566,
+        "depression": 0.05984899367539583,
+        "eating_disorder": 0.04852666713534909,
+        "family_issues": 0.05206990095095261,
+        "financial_stress": 0.04848466212556682,
+        "grief_loss": 0.045407523546162426,
+        "health_anxiety": 0.04524128550307022,
+        "identity_issues": 0.04546030762996363,
+        "insomnia": 0.05474938086105209,
+        "positive_outlook": 0.05115412805432457,
+        "ptsd_trauma": 0.051909290924108634,
+        "relationship_issues": 0.048257166595568064,
+        "self_esteem": 0.04856114243055481,
+        "social_anxiety": 0.050302643043087396,
+        "work_stress": 0.0486435023735028
+      }
+    },
+    "keywords": [
+      {
+        "text": "hope",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 3.9,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling very anxious about everything today",
+    "timestamp": "2024-10-06 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.294,
+        "neu": 0.513,
+        "pos": 0.192,
+        "compound": -0.2006
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.08421751149498759,
+      "all_probabilities": {
+        "academic_stress": 0.05181749572828871,
+        "addiction": 0.04729727199496542,
+        "anxiety": 0.08421751149498759,
+        "burnout": 0.04746132978080795,
+        "career_confusion": 0.05098353477155364,
+        "cultural_adjustment": 0.048724063758347806,
+        "depression": 0.05755594809515237,
+        "eating_disorder": 0.0518211913297213,
+        "family_issues": 0.045235718833757786,
+        "financial_stress": 0.04941039995855829,
+        "grief_loss": 0.04499324068099574,
+        "health_anxiety": 0.046657032271741075,
+        "identity_issues": 0.045067565341462903,
+        "insomnia": 0.047454607681668814,
+        "positive_outlook": 0.04513661982273906,
+        "ptsd_trauma": 0.047866329965748064,
+        "relationship_issues": 0.049117649021363084,
+        "self_esteem": 0.04710242950246676,
+        "social_anxiety": 0.04489103396127816,
+        "work_stress": 0.04718902600439402
+      }
+    },
+    "keywords": [
+      {
+        "text": "today",
+        "type": "named_entity",
+        "label": "DATE"
+      }
+    ],
+    "intensity": {
+      "score": 3.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Struggling with sleep again",
+    "timestamp": "2024-10-07 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.483,
+        "neu": 0.517,
+        "pos": 0.0,
+        "compound": -0.4215
+      }
+    },
+    "category": {
+      "primary": "identity_issues",
+      "confidence": 0.06873656967246941,
+      "all_probabilities": {
+        "academic_stress": 0.0492172607414176,
+        "addiction": 0.05263148393673275,
+        "anxiety": 0.05091870557682047,
+        "burnout": 0.04565568683994141,
+        "career_confusion": 0.04538904561857417,
+        "cultural_adjustment": 0.0455372118244895,
+        "depression": 0.045360981543328176,
+        "eating_disorder": 0.048834689000912056,
+        "family_issues": 0.045706999783216504,
+        "financial_stress": 0.04548191028258379,
+        "grief_loss": 0.04875112305129027,
+        "health_anxiety": 0.048437702394551925,
+        "identity_issues": 0.06873656967246941,
+        "insomnia": 0.06013342983921005,
+        "positive_outlook": 0.045624565571885774,
+        "ptsd_trauma": 0.05024381204265636,
+        "relationship_issues": 0.058349143141937745,
+        "self_esteem": 0.049005740286556944,
+        "social_anxiety": 0.04542014000893377,
+        "work_stress": 0.0505637988424912
+      }
+    },
+    "keywords": [
+      {
+        "text": "sleep",
+        "type": "mental_health_term",
+        "category": "insomnia"
+      }
+    ],
+    "intensity": {
+      "score": 2.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Family issues causing stress",
+    "timestamp": "2024-10-08 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.483,
+        "neu": 0.517,
+        "pos": 0.0,
+        "compound": -0.4215
+      }
+    },
+    "category": {
+      "primary": "family_issues",
+      "confidence": 0.07091817755152272,
+      "all_probabilities": {
+        "academic_stress": 0.04644226399695529,
+        "addiction": 0.04669243847330776,
+        "anxiety": 0.046160862253022905,
+        "burnout": 0.04666405855258746,
+        "career_confusion": 0.04635695533989158,
+        "cultural_adjustment": 0.06842958671878478,
+        "depression": 0.0463246459573396,
+        "eating_disorder": 0.05201833947720461,
+        "family_issues": 0.07091817755152272,
+        "financial_stress": 0.04646388594286285,
+        "grief_loss": 0.046490754647982066,
+        "health_anxiety": 0.04626651925952726,
+        "identity_issues": 0.0557795595675248,
+        "insomnia": 0.04649437085762727,
+        "positive_outlook": 0.04662820293317398,
+        "ptsd_trauma": 0.046724829127676316,
+        "relationship_issues": 0.05548813078269071,
+        "self_esteem": 0.046602855560869884,
+        "social_anxiety": 0.04639275640855822,
+        "work_stress": 0.0466608065908891
+      }
+    },
+    "keywords": [
+      {
+        "text": "family",
+        "type": "mental_health_term",
+        "category": "relationship_issues"
+      },
+      {
+        "text": "family",
+        "type": "mental_health_term",
+        "category": "family_issues"
+      }
+    ],
+    "intensity": {
+      "score": 2.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling more confident after counseling",
+    "timestamp": "2024-10-09 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.375,
+        "pos": 0.625,
+        "compound": 0.6115
+      }
+    },
+    "category": {
+      "primary": "relationship_issues",
+      "confidence": 0.06862643314024161,
+      "all_probabilities": {
+        "academic_stress": 0.05627510741820117,
+        "addiction": 0.05152264247941176,
+        "anxiety": 0.04929504447947617,
+        "burnout": 0.04713337979475775,
+        "career_confusion": 0.054142277268576657,
+        "cultural_adjustment": 0.05738431621491259,
+        "depression": 0.05390866239833158,
+        "eating_disorder": 0.0510607422566655,
+        "family_issues": 0.044879355178070346,
+        "financial_stress": 0.055546563781824515,
+        "grief_loss": 0.044636978413916686,
+        "health_anxiety": 0.044403245204302104,
+        "identity_issues": 0.04471127095240279,
+        "insomnia": 0.04464074858795662,
+        "positive_outlook": 0.044780296417242633,
+        "ptsd_trauma": 0.04888980135751,
+        "relationship_issues": 0.06862643314024161,
+        "self_esteem": 0.04677069620186228,
+        "social_anxiety": 0.044534817377715794,
+        "work_stress": 0.04685762107662257
+      }
+    },
+    "keywords": [],
+    "intensity": {
+      "score": 3.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Making progress with my anxiety management",
+    "timestamp": "2024-10-10 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.2,
+        "neu": 0.471,
+        "pos": 0.329,
+        "compound": 0.2732
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.06325574583565277,
+      "all_probabilities": {
+        "academic_stress": 0.046585704550789205,
+        "addiction": 0.04527015433252901,
+        "anxiety": 0.06325574583565277,
+        "burnout": 0.045238014965546997,
+        "career_confusion": 0.0479909978098343,
+        "cultural_adjustment": 0.049735569730956254,
+        "depression": 0.049382234818780124,
+        "eating_disorder": 0.049282526010663665,
+        "family_issues": 0.04530497673860579,
+        "financial_stress": 0.046705896089443,
+        "grief_loss": 0.049107448750774385,
+        "health_anxiety": 0.04880498758014942,
+        "identity_issues": 0.05187569300251136,
+        "insomnia": 0.046787385614084,
+        "positive_outlook": 0.04519741430328249,
+        "ptsd_trauma": 0.04530683974206974,
+        "relationship_issues": 0.05800038088885866,
+        "self_esteem": 0.0584379107822726,
+        "social_anxiety": 0.05804082574107505,
+        "work_stress": 0.049689292712120935
+      }
+    },
+    "keywords": [
+      {
+        "text": "progress",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 1.4,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling down and unmotivated",
+    "timestamp": "2024-10-11 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.407,
+        "neu": 0.339,
+        "pos": 0.254,
+        "compound": -0.2263
+      }
+    },
+    "category": {
+      "primary": "burnout",
+      "confidence": 0.05894108233714053,
+      "all_probabilities": {
+        "academic_stress": 0.05658998533109589,
+        "addiction": 0.0469202153068058,
+        "anxiety": 0.05423766277840803,
+        "burnout": 0.05894108233714053,
+        "career_confusion": 0.05072746497163457,
+        "cultural_adjustment": 0.05119286453403447,
+        "depression": 0.055562179908180985,
+        "eating_disorder": 0.05668847155162903,
+        "family_issues": 0.04160253906125114,
+        "financial_stress": 0.05150529325967228,
+        "grief_loss": 0.04147089942234795,
+        "health_anxiety": 0.04986038033923485,
+        "identity_issues": 0.05070545049066856,
+        "insomnia": 0.04147294934539719,
+        "positive_outlook": 0.05488231770553071,
+        "ptsd_trauma": 0.04625630649156001,
+        "relationship_issues": 0.04624294408701107,
+        "self_esteem": 0.051642281715539445,
+        "social_anxiety": 0.04141532494855344,
+        "work_stress": 0.052083386414304156
+      }
+    },
+    "keywords": [],
+    "intensity": {
+      "score": 1.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-10-12 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-10-13 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Worried about my health constantly",
+    "timestamp": "2024-10-14 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.355,
+        "neu": 0.645,
+        "pos": 0.0,
+        "compound": -0.296
+      }
+    },
+    "category": {
+      "primary": "academic_stress",
+      "confidence": 0.06694156092222081,
+      "all_probabilities": {
+        "academic_stress": 0.06694156092222081,
+        "addiction": 0.04402607640454554,
+        "anxiety": 0.06681074529028098,
+        "burnout": 0.04399478280925258,
+        "career_confusion": 0.05970150073355349,
+        "cultural_adjustment": 0.04384433428611795,
+        "depression": 0.04587872533618285,
+        "eating_disorder": 0.05030017349837384,
+        "family_issues": 0.04405998246279584,
+        "financial_stress": 0.04781400134947465,
+        "grief_loss": 0.04552210748630301,
+        "health_anxiety": 0.05697832399079285,
+        "identity_issues": 0.04585792597617619,
+        "insomnia": 0.05671293186380169,
+        "positive_outlook": 0.043955250622149694,
+        "ptsd_trauma": 0.04654801444841331,
+        "relationship_issues": 0.04921725451410623,
+        "self_esteem": 0.0491209383668245,
+        "social_anxiety": 0.04369579001006837,
+        "work_stress": 0.049019579628564576
+      }
+    },
+    "keywords": [
+      {
+        "text": "health",
+        "type": "mental_health_term",
+        "category": "health_anxiety"
+      }
+    ],
+    "intensity": {
+      "score": 1.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Started a new exercise routine, feeling better",
+    "timestamp": "2024-10-15 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.532,
+        "pos": 0.468,
+        "compound": 0.5267
+      }
+    },
+    "category": {
+      "primary": "cultural_adjustment",
+      "confidence": 0.06317789323025902,
+      "all_probabilities": {
+        "academic_stress": 0.047324095173356104,
+        "addiction": 0.047475867527832054,
+        "anxiety": 0.05216025304196834,
+        "burnout": 0.05304021745240545,
+        "career_confusion": 0.05467715024535116,
+        "cultural_adjustment": 0.06317789323025902,
+        "depression": 0.05722415311311634,
+        "eating_disorder": 0.05197369313953299,
+        "family_issues": 0.04468773050606664,
+        "financial_stress": 0.05200315744281327,
+        "grief_loss": 0.04449026579910564,
+        "health_anxiety": 0.044299657888739706,
+        "identity_issues": 0.04455081275619833,
+        "insomnia": 0.05113872505708126,
+        "positive_outlook": 0.049516474190413426,
+        "ptsd_trauma": 0.044689127491501474,
+        "relationship_issues": 0.046953521871412746,
+        "self_esteem": 0.04726348858150748,
+        "social_anxiety": 0.049367501618605154,
+        "work_stress": 0.05398621387273358
+      }
+    },
+    "keywords": [],
+    "intensity": {
+      "score": 2.6,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Started a new exercise routine, feeling better",
+    "timestamp": "2024-10-16 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.532,
+        "pos": 0.468,
+        "compound": 0.5267
+      }
+    },
+    "category": {
+      "primary": "cultural_adjustment",
+      "confidence": 0.06317789323025902,
+      "all_probabilities": {
+        "academic_stress": 0.047324095173356104,
+        "addiction": 0.047475867527832054,
+        "anxiety": 0.05216025304196834,
+        "burnout": 0.05304021745240545,
+        "career_confusion": 0.05467715024535116,
+        "cultural_adjustment": 0.06317789323025902,
+        "depression": 0.05722415311311634,
+        "eating_disorder": 0.05197369313953299,
+        "family_issues": 0.04468773050606664,
+        "financial_stress": 0.05200315744281327,
+        "grief_loss": 0.04449026579910564,
+        "health_anxiety": 0.044299657888739706,
+        "identity_issues": 0.04455081275619833,
+        "insomnia": 0.05113872505708126,
+        "positive_outlook": 0.049516474190413426,
+        "ptsd_trauma": 0.044689127491501474,
+        "relationship_issues": 0.046953521871412746,
+        "self_esteem": 0.04726348858150748,
+        "social_anxiety": 0.049367501618605154,
+        "work_stress": 0.05398621387273358
+      }
+    },
+    "keywords": [],
+    "intensity": {
+      "score": 2.6,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Feeling very anxious about everything today",
+    "timestamp": "2024-10-17 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.294,
+        "neu": 0.513,
+        "pos": 0.192,
+        "compound": -0.2006
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.08421751149498759,
+      "all_probabilities": {
+        "academic_stress": 0.05181749572828871,
+        "addiction": 0.04729727199496542,
+        "anxiety": 0.08421751149498759,
+        "burnout": 0.04746132978080795,
+        "career_confusion": 0.05098353477155364,
+        "cultural_adjustment": 0.048724063758347806,
+        "depression": 0.05755594809515237,
+        "eating_disorder": 0.0518211913297213,
+        "family_issues": 0.045235718833757786,
+        "financial_stress": 0.04941039995855829,
+        "grief_loss": 0.04499324068099574,
+        "health_anxiety": 0.046657032271741075,
+        "identity_issues": 0.045067565341462903,
+        "insomnia": 0.047454607681668814,
+        "positive_outlook": 0.04513661982273906,
+        "ptsd_trauma": 0.047866329965748064,
+        "relationship_issues": 0.049117649021363084,
+        "self_esteem": 0.04710242950246676,
+        "social_anxiety": 0.04489103396127816,
+        "work_stress": 0.04718902600439402
+      }
+    },
+    "keywords": [
+      {
+        "text": "today",
+        "type": "named_entity",
+        "label": "DATE"
+      }
+    ],
+    "intensity": {
+      "score": 3.5,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Making progress with my anxiety management",
+    "timestamp": "2024-10-18 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.2,
+        "neu": 0.471,
+        "pos": 0.329,
+        "compound": 0.2732
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.06325574583565277,
+      "all_probabilities": {
+        "academic_stress": 0.046585704550789205,
+        "addiction": 0.04527015433252901,
+        "anxiety": 0.06325574583565277,
+        "burnout": 0.045238014965546997,
+        "career_confusion": 0.0479909978098343,
+        "cultural_adjustment": 0.049735569730956254,
+        "depression": 0.049382234818780124,
+        "eating_disorder": 0.049282526010663665,
+        "family_issues": 0.04530497673860579,
+        "financial_stress": 0.046705896089443,
+        "grief_loss": 0.049107448750774385,
+        "health_anxiety": 0.04880498758014942,
+        "identity_issues": 0.05187569300251136,
+        "insomnia": 0.046787385614084,
+        "positive_outlook": 0.04519741430328249,
+        "ptsd_trauma": 0.04530683974206974,
+        "relationship_issues": 0.05800038088885866,
+        "self_esteem": 0.0584379107822726,
+        "social_anxiety": 0.05804082574107505,
+        "work_stress": 0.049689292712120935
+      }
+    },
+    "keywords": [
+      {
+        "text": "progress",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 1.4,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Making progress with my anxiety management",
+    "timestamp": "2024-10-19 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.2,
+        "neu": 0.471,
+        "pos": 0.329,
+        "compound": 0.2732
+      }
+    },
+    "category": {
+      "primary": "anxiety",
+      "confidence": 0.06325574583565277,
+      "all_probabilities": {
+        "academic_stress": 0.046585704550789205,
+        "addiction": 0.04527015433252901,
+        "anxiety": 0.06325574583565277,
+        "burnout": 0.045238014965546997,
+        "career_confusion": 0.0479909978098343,
+        "cultural_adjustment": 0.049735569730956254,
+        "depression": 0.049382234818780124,
+        "eating_disorder": 0.049282526010663665,
+        "family_issues": 0.04530497673860579,
+        "financial_stress": 0.046705896089443,
+        "grief_loss": 0.049107448750774385,
+        "health_anxiety": 0.04880498758014942,
+        "identity_issues": 0.05187569300251136,
+        "insomnia": 0.046787385614084,
+        "positive_outlook": 0.04519741430328249,
+        "ptsd_trauma": 0.04530683974206974,
+        "relationship_issues": 0.05800038088885866,
+        "self_esteem": 0.0584379107822726,
+        "social_anxiety": 0.05804082574107505,
+        "work_stress": 0.049689292712120935
+      }
+    },
+    "keywords": [
+      {
+        "text": "progress",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 1.4,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Struggling with sleep again",
+    "timestamp": "2024-10-20 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.483,
+        "neu": 0.517,
+        "pos": 0.0,
+        "compound": -0.4215
+      }
+    },
+    "category": {
+      "primary": "identity_issues",
+      "confidence": 0.06873656967246941,
+      "all_probabilities": {
+        "academic_stress": 0.0492172607414176,
+        "addiction": 0.05263148393673275,
+        "anxiety": 0.05091870557682047,
+        "burnout": 0.04565568683994141,
+        "career_confusion": 0.04538904561857417,
+        "cultural_adjustment": 0.0455372118244895,
+        "depression": 0.045360981543328176,
+        "eating_disorder": 0.048834689000912056,
+        "family_issues": 0.045706999783216504,
+        "financial_stress": 0.04548191028258379,
+        "grief_loss": 0.04875112305129027,
+        "health_anxiety": 0.048437702394551925,
+        "identity_issues": 0.06873656967246941,
+        "insomnia": 0.06013342983921005,
+        "positive_outlook": 0.045624565571885774,
+        "ptsd_trauma": 0.05024381204265636,
+        "relationship_issues": 0.058349143141937745,
+        "self_esteem": 0.049005740286556944,
+        "social_anxiety": 0.04542014000893377,
+        "work_stress": 0.0505637988424912
+      }
+    },
+    "keywords": [
+      {
+        "text": "sleep",
+        "type": "mental_health_term",
+        "category": "insomnia"
+      }
+    ],
+    "intensity": {
+      "score": 2.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Had a good therapy session, feeling hopeful",
+    "timestamp": "2024-10-21 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.342,
+        "pos": 0.658,
+        "compound": 0.7717
+      }
+    },
+    "category": {
+      "primary": "depression",
+      "confidence": 0.05984899367539583,
+      "all_probabilities": {
+        "academic_stress": 0.048670486014246,
+        "addiction": 0.04878346838081994,
+        "anxiety": 0.05283858662845032,
+        "burnout": 0.04906540424593246,
+        "career_confusion": 0.050843346858097924,
+        "cultural_adjustment": 0.051182113023793566,
+        "depression": 0.05984899367539583,
+        "eating_disorder": 0.04852666713534909,
+        "family_issues": 0.05206990095095261,
+        "financial_stress": 0.04848466212556682,
+        "grief_loss": 0.045407523546162426,
+        "health_anxiety": 0.04524128550307022,
+        "identity_issues": 0.04546030762996363,
+        "insomnia": 0.05474938086105209,
+        "positive_outlook": 0.05115412805432457,
+        "ptsd_trauma": 0.051909290924108634,
+        "relationship_issues": 0.048257166595568064,
+        "self_esteem": 0.04856114243055481,
+        "social_anxiety": 0.050302643043087396,
+        "work_stress": 0.0486435023735028
+      }
+    },
+    "keywords": [
+      {
+        "text": "hope",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 3.9,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Having trouble concentrating at work",
+    "timestamp": "2024-10-22 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.403,
+        "neu": 0.597,
+        "pos": 0.0,
+        "compound": -0.4019
+      }
+    },
+    "category": {
+      "primary": "social_anxiety",
+      "confidence": 0.06618617067941922,
+      "all_probabilities": {
+        "academic_stress": 0.04492783662848669,
+        "addiction": 0.04514418144406949,
+        "anxiety": 0.04866331643588998,
+        "burnout": 0.04961338489904664,
+        "career_confusion": 0.044854035604715556,
+        "cultural_adjustment": 0.06207534319675807,
+        "depression": 0.05930591260418469,
+        "eating_disorder": 0.045002385683038576,
+        "family_issues": 0.048970870781138286,
+        "financial_stress": 0.049336338888797196,
+        "grief_loss": 0.04496977978174272,
+        "health_anxiety": 0.044775783121164925,
+        "identity_issues": 0.04503140439013322,
+        "insomnia": 0.04885672559072482,
+        "positive_outlook": 0.045088643837891816,
+        "ptsd_trauma": 0.04517218311417756,
+        "relationship_issues": 0.051302613161839115,
+        "self_esteem": 0.04506672644694992,
+        "social_anxiety": 0.06618617067941922,
+        "work_stress": 0.06565636370983066
+      }
+    },
+    "keywords": [
+      {
+        "text": "work",
+        "type": "mental_health_term",
+        "category": "work_stress"
+      }
+    ],
+    "intensity": {
+      "score": 2.0,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Struggling with sleep again",
+    "timestamp": "2024-10-23 20:30:51.872263",
+    "sentiment": {
+      "label": "Negative",
+      "scores": {
+        "neg": 0.483,
+        "neu": 0.517,
+        "pos": 0.0,
+        "compound": -0.4215
+      }
+    },
+    "category": {
+      "primary": "identity_issues",
+      "confidence": 0.06873656967246941,
+      "all_probabilities": {
+        "academic_stress": 0.0492172607414176,
+        "addiction": 0.05263148393673275,
+        "anxiety": 0.05091870557682047,
+        "burnout": 0.04565568683994141,
+        "career_confusion": 0.04538904561857417,
+        "cultural_adjustment": 0.0455372118244895,
+        "depression": 0.045360981543328176,
+        "eating_disorder": 0.048834689000912056,
+        "family_issues": 0.045706999783216504,
+        "financial_stress": 0.04548191028258379,
+        "grief_loss": 0.04875112305129027,
+        "health_anxiety": 0.048437702394551925,
+        "identity_issues": 0.06873656967246941,
+        "insomnia": 0.06013342983921005,
+        "positive_outlook": 0.045624565571885774,
+        "ptsd_trauma": 0.05024381204265636,
+        "relationship_issues": 0.058349143141937745,
+        "self_esteem": 0.049005740286556944,
+        "social_anxiety": 0.04542014000893377,
+        "work_stress": 0.0505637988424912
+      }
+    },
+    "keywords": [
+      {
+        "text": "sleep",
+        "type": "mental_health_term",
+        "category": "insomnia"
+      }
+    ],
+    "intensity": {
+      "score": 2.1,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Had a good therapy session, feeling hopeful",
+    "timestamp": "2024-10-24 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.342,
+        "pos": 0.658,
+        "compound": 0.7717
+      }
+    },
+    "category": {
+      "primary": "depression",
+      "confidence": 0.05984899367539583,
+      "all_probabilities": {
+        "academic_stress": 0.048670486014246,
+        "addiction": 0.04878346838081994,
+        "anxiety": 0.05283858662845032,
+        "burnout": 0.04906540424593246,
+        "career_confusion": 0.050843346858097924,
+        "cultural_adjustment": 0.051182113023793566,
+        "depression": 0.05984899367539583,
+        "eating_disorder": 0.04852666713534909,
+        "family_issues": 0.05206990095095261,
+        "financial_stress": 0.04848466212556682,
+        "grief_loss": 0.045407523546162426,
+        "health_anxiety": 0.04524128550307022,
+        "identity_issues": 0.04546030762996363,
+        "insomnia": 0.05474938086105209,
+        "positive_outlook": 0.05115412805432457,
+        "ptsd_trauma": 0.051909290924108634,
+        "relationship_issues": 0.048257166595568064,
+        "self_esteem": 0.04856114243055481,
+        "social_anxiety": 0.050302643043087396,
+        "work_stress": 0.0486435023735028
+      }
+    },
+    "keywords": [
+      {
+        "text": "hope",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 3.9,
+      "level": "Low"
+    }
+  },
+  {
+    "text": "Had a good therapy session, feeling hopeful",
+    "timestamp": "2024-10-25 20:30:51.872263",
+    "sentiment": {
+      "label": "Positive",
+      "scores": {
+        "neg": 0.0,
+        "neu": 0.342,
+        "pos": 0.658,
+        "compound": 0.7717
+      }
+    },
+    "category": {
+      "primary": "depression",
+      "confidence": 0.05984899367539583,
+      "all_probabilities": {
+        "academic_stress": 0.048670486014246,
+        "addiction": 0.04878346838081994,
+        "anxiety": 0.05283858662845032,
+        "burnout": 0.04906540424593246,
+        "career_confusion": 0.050843346858097924,
+        "cultural_adjustment": 0.051182113023793566,
+        "depression": 0.05984899367539583,
+        "eating_disorder": 0.04852666713534909,
+        "family_issues": 0.05206990095095261,
+        "financial_stress": 0.04848466212556682,
+        "grief_loss": 0.045407523546162426,
+        "health_anxiety": 0.04524128550307022,
+        "identity_issues": 0.04546030762996363,
+        "insomnia": 0.05474938086105209,
+        "positive_outlook": 0.05115412805432457,
+        "ptsd_trauma": 0.051909290924108634,
+        "relationship_issues": 0.048257166595568064,
+        "self_esteem": 0.04856114243055481,
+        "social_anxiety": 0.050302643043087396,
+        "work_stress": 0.0486435023735028
+      }
+    },
+    "keywords": [
+      {
+        "text": "hope",
+        "type": "mental_health_term",
+        "category": "positive_outlook"
+      }
+    ],
+    "intensity": {
+      "score": 3.9,
+      "level": "Low"
+    }
+  }
+]
