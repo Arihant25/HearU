@@ -22,15 +22,22 @@ const getCookie = (name) => {
   return null;
 };
 
+// Generate random number between min and max (inclusive)
+const generateRandomNumber = (min = 1000, max = 9999) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
 export default function Home() {
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [userNumber, setUserNumber] = useState(null);
 
   // Check if user has already started and router is ready
   useEffect(() => {
-    const userStarted = getCookie('hearU_started');
-    if (userStarted) {
+    const savedNumber = getCookie('hearU_user_number');
+    if (savedNumber) {
+      setUserNumber(parseInt(savedNumber));
       setHasStarted(true);
     }
     setIsReady(true);
@@ -39,15 +46,21 @@ export default function Home() {
   const handleGetStarted = async () => {
     if (!isReady) return;
 
-    // Set cookie to remember user has started
-    setCookie('hearU_started', 'true', 30); // Cookie expires in 30 days
+    // Generate random number if not already set
+    if (!userNumber) {
+      const randomNum = generateRandomNumber();
+      setUserNumber(randomNum);
+      setCookie('hearU_user_number', randomNum.toString(), 30); // Store for 30 days
+    }
+    
+    // Set started cookie
+    setCookie('hearU_started', 'true', 30);
     setHasStarted(true);
     
     try {
-      await router.push('/chat');
+      await router.push('/onboarding');
     } catch (error) {
       console.error('Navigation error:', error);
-      // Optionally handle navigation error here
     }
   };
 
@@ -66,7 +79,7 @@ export default function Home() {
           <p className="text-xl text-text-muted text-justify" style={{ width: '100%' }}>
             At hearU, we offer a secure space for self-reflection, support, and mental well-being insights. Join us in taking a step towards understanding and managing your mental health with confidence.
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-4">
             <button 
               onClick={handleGetStarted}
               disabled={!isReady}
@@ -80,6 +93,11 @@ export default function Home() {
             >
               {hasStarted ? 'Continue Journey' : 'Get Started'}
             </button>
+            {userNumber && (
+              <p className="text-sm text-text-muted">
+                Your unique number: {userNumber}
+              </p>
+            )}
           </div>
         </div>
         
