@@ -52,13 +52,13 @@ export default function Home() {
       setUserNumber(randomNum);
       setCookie('hearU_user_number', randomNum.toString(), 30); // Store for 30 days
     }
-    
+
     // Set started cookie
     setCookie('hearU_started', 'true', 30);
     setHasStarted(true);
-    
+
     try {
-      await router.push('/onboarding');
+      await router.push('/chat');
     } catch (error) {
       console.error('Navigation error:', error);
     }
@@ -68,7 +68,7 @@ export default function Home() {
     <div className="bg-bg-dark text-text-light min-h-screen flex flex-col font-sans">
       {/* Header */}
       <Header />
-      
+
       {/* Main Section */}
       <main className="flex-grow flex flex-col md:flex-row items-center px-4 py-4 sm:px-8 sm:py-8 md:px-12 md:py-16 lg:px-20 lg:py-20">
         {/* Left Content */}
@@ -80,14 +80,14 @@ export default function Home() {
             At hearU, we offer a secure space for self-reflection, support, and mental well-being insights. Join us in taking a step towards understanding and managing your mental health with confidence.
           </p>
           <div className="flex flex-col items-center space-y-4">
-            <button 
+            <button
               onClick={handleGetStarted}
               disabled={!isReady}
               className={`mt-6 py-3 px-8 rounded-full gradient-border transition-all duration-300 ${
-                !isReady 
+                !isReady
                   ? 'opacity-50 cursor-not-allowed'
-                  : hasStarted 
-                    ? 'bg-primary-blue text-bg-dark hover:bg-primary-green' 
+                  : hasStarted
+                    ? 'bg-primary-blue text-bg-dark hover:bg-primary-green'
                     : 'bg-primary-green text-bg-dark hover:bg-primary-blue'
               }`}
             >
@@ -100,10 +100,10 @@ export default function Home() {
             )}
           </div>
         </div>
-        
+
         {/* Right Content */}
         <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
-          <Image 
+          <Image
             src="/logo.png"
             width={1000}
             height={400}
@@ -113,7 +113,7 @@ export default function Home() {
           />
         </div>
       </main>
-      
+
       {/* Footer */}
       <footer className="bg-bg-accent py-6 text-center">
         <p>© 2024 hearU. All rights reserved.</p>
