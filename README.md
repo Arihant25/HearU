@@ -1,5 +1,7 @@
 # HearU - Your AI Mental Health Companion 🧠💬
 
+<https://colab.research.google.com/drive/18fG-TOAUiOJQuXFKWAtWQ-xmzA6jPguZ?usp=sharing>
+
 ## Introduction
 
 Welcome to HearU, where cutting-edge AI meets mental health support! 🚀 We've turbocharged our backend with the power of LLaMA, making our chat-based application smarter, more empathetic, and ready to lend an ear (or a text box) whenever you need it.
