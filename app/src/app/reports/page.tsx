@@ -65,16 +65,6 @@ export default function Reports() {
             </div>
           ))}
         </div>
-
-        {/* Progress Indication */}
-        <div className="mt-16 flex flex-col items-center">
-          <div className="w-full max-w-md bg-bg-accent rounded-full h-2 mb-4">
-            <div className="bg-primary-green h-2 rounded-full w-3/4"></div>
-          </div>
-          <p className="text-text-muted">
-            Development Progress: <span className="text-primary-green">75%</span>
-          </p>
-        </div>
       </main>
 
       {/* Footer */}
