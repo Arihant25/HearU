@@ -24,11 +24,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 import uvicorn
+from peft import PeftModel, PeftConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
+from huggingface_hub import login
+login(token="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")
 
 
 # FastAPI Models
 class User(BaseModel):
-    email: EmailStr
+    user_id: str
     name: Optional[str] = None
 
 
@@ -303,17 +308,17 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
 
-        # Create users table
+        # Update users table to use user_id
         c.execute('''
             CREATE TABLE IF NOT EXISTS users
-            (email TEXT PRIMARY KEY, name TEXT)
+            (user_id TEXT PRIMARY KEY, name TEXT)
         ''')
 
-        # Create conversations table
+        # Update conversations table to use user_id
         c.execute('''
             CREATE TABLE IF NOT EXISTS conversations
             (id INTEGER PRIMARY KEY AUTOINCREMENT,
-             user_email TEXT,
+             user_id TEXT,
              message TEXT,
              timestamp TEXT,
              analysis TEXT,
@@ -323,35 +328,35 @@ class DatabaseManager:
         conn.commit()
         conn.close()
 
-    def add_user(self, email: str, name: Optional[str] = None):
+    def add_user(self, user_id: str, name: Optional[str] = None):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('INSERT OR REPLACE INTO users (email, name) VALUES (?, ?)',
-                  (email, name))
+        c.execute('INSERT OR REPLACE INTO users (user_id, name) VALUES (?, ?)',
+                  (user_id, name))
         conn.commit()
         conn.close()
 
-    def add_conversation(self, email: str, message: str, analysis: dict, model_response: str):
+    def add_conversation(self, user_id: str, message: str, analysis: dict, model_response: str):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         timestamp = datetime.now().isoformat()
         c.execute('''
             INSERT INTO conversations 
-            (user_email, message, timestamp, analysis, model_response)
+            (user_id, message, timestamp, analysis, model_response)
             VALUES (?, ?, ?, ?, ?)
-        ''', (email, message, timestamp, json.dumps(analysis), model_response))
+        ''', (user_id, message, timestamp, json.dumps(analysis), model_response))
         conn.commit()
         conn.close()
 
-    def get_conversation_history(self, email: str) -> List[Dict]:
+    def get_conversation_history(self, user_id: str) -> List[Dict]:
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''
             SELECT message, timestamp, analysis, model_response 
             FROM conversations 
-            WHERE user_email = ? 
+            WHERE user_id = ? 
             ORDER BY timestamp
-        ''', (email,))
+        ''', (user_id,))
         rows = c.fetchall()
         conn.close()
 
@@ -366,83 +371,72 @@ class DatabaseManager:
         ]
 
 
-# TODO: make it start new convos, but pass the history everytime. This way, no need to maintain the processes.
-class OllamaManager:
+class MistralManager:
     def __init__(self):
-        self.conversations: Dict[str, subprocess.Popen] = {}
-        self.conversation_dirs = Path("conversation_histories")
-        self.conversation_dirs.mkdir(exist_ok=True)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.config = PeftConfig.from_pretrained(
+            "GRMenon/mental-health-mistral-7b-instructv0.2-finetuned-V2")
+        self.base_model = AutoModelForCausalLM.from_pretrained(
+            "mistralai/Mistral-7B-Instruct-v0.2",
+            torch_dtype=torch.float16,
+            device_map=self.device
+        )
+        self.model = PeftModel.from_pretrained(
+            self.base_model,
+            "GRMenon/mental-health-mistral-7b-instructv0.2-finetuned-V2"
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            "mistralai/Mistral-7B-Instruct-v0.2")
+        self.conversation_histories = {}
 
-    def get_conversation_path(self, email: str) -> Path:
-        return self.conversation_dirs / f"{email.replace('@', '_at_')}.txt"
+    async def start_conversation(self, user_id: str):
+        if user_id not in self.conversation_histories:
+            self.conversation_histories[user_id] = []
+            print(f"Started conversation for user {user_id}")
 
-    async def start_conversation(self, email: str):
-        if email not in self.conversations:
-            conversation_path = self.get_conversation_path(email)
+    async def get_response(self, user_id: str, message: str) -> str:
+        if user_id not in self.conversation_histories:
+            await self.start_conversation(user_id)
 
-            print(f"Starting conversation for {email}")
+        # Format the conversation history and current message
+        conversation = self.conversation_histories[user_id]
+        conversation.append({"role": "user", "content": message})
 
-            # Start Ollama process
-            process = subprocess.Popen(
-                ['ollama', 'run', 'llama2'],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+        # Format the input for Mistral
+        prompt = self._format_conversation(conversation)
+
+        # Generate response
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=512,
+                temperature=0.7,
+                top_p=0.95,
+                do_sample=True
             )
 
-            print(f"Started conversation for {email}")
+        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-            self.conversations[email] = process
-
-            # Load conversation history if exists
-            if conversation_path.exists():
-                history = conversation_path.read_text()
-                # Send history to model
-                process.stdin.write(f"Previous conversation:\n{history}\n")
-                process.stdin.flush()
-            print(f"Loaded conversation history for {email}")
-
-    async def get_response(self, email: str, message: str) -> str:
-        print(f"Getting response for {email}: {message}")
-        if email not in self.conversations:
-            await self.start_conversation(email)
-
-        print(f"Conversation exists for {email}")
-
-        process = self.conversations[email]
-        conversation_path = self.get_conversation_path(email)
-
-        print(f"Conversation path: {conversation_path}")
-
-        # Send message to model
-        process.stdin.write(f"User: {message}\n")
-        process.stdin.flush()
-
-        print("Sent message to model")
-
-        # Get response
-        response = ""
-        while True:
-            line = process.stdout.readline().strip()
-            if line == "":
-                break
-            response += line + "\n"
-
-        response = response.strip()
-        print(f"Received response from model: {response}")
-
-        # Save to conversation history
-        with conversation_path.open('a') as f:
-            f.write(f"User: {message}\n")
-            f.write(f"Assistant: {response}\n")
+        # Clean up the response and add to conversation history
+        response = response.replace(prompt, "").strip()
+        conversation.append({"role": "assistant", "content": response})
 
         return response
 
-    def close_conversation(self, email: str):
-        if email in self.conversations:
-            self.conversations[email].terminate()
-            del self.conversations[email]
+    def _format_conversation(self, conversation):
+        formatted_prompt = "<s>[INST] "
+        for msg in conversation:
+            if msg["role"] == "user":
+                formatted_prompt += f"{msg['content']} [/INST]"
+            else:
+                formatted_prompt += f"{msg['content']} </s><s>[INST] "
+        return formatted_prompt
+
+    def close_conversation(self, user_id: str):
+        if user_id in self.conversation_histories:
+            del self.conversation_histories[user_id]
+            print(f"Closed conversation for user {user_id}")
 
 
 class MentalHealthVisualizer:
@@ -508,7 +502,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Initialize core components
 db_manager = DatabaseManager()
-ollama_manager = OllamaManager()
+model_manager = MistralManager()
 
 
 class MentalHealthAnalysisSystem:
@@ -1371,32 +1365,24 @@ class MentalHealthAnalysisSystem:
 async def create_user(user: User):
     """Create a new user in the system"""
     try:
-        db_manager.add_user(user.email, user.name)
-        return {"message": "User created successfully", "email": user.email}
+        db_manager.add_user(user.user_id, user.name)
+        return {"message": "User created successfully", "user_id": user.user_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.post("/chat/{email}", response_model=dict)
-async def chat(email: str, message: Message):
+@app.post("/chat/{user_id}", response_model=dict)
+async def chat(user_id: str, message: Message):
     """Process a chat message and return analysis with model response"""
     try:
-        # Initialize the mental health system if not already done
         system = MentalHealthAnalysisSystem()
-
-        # Analyze message
         analysis = system.analyzer.analyze_text(
             message.text,
             datetime.now()
         )
-
-        # Get model response
-        model_response = await ollama_manager.get_response(email, message.text)
-
-        # Save to database
+        model_response = await model_manager.get_response(user_id, message.text)
         db_manager.add_conversation(
-            email, message.text, analysis, model_response)
-
+            user_id, message.text, analysis, model_response)
         return {
             "message": message.text,
             "analysis": analysis,
@@ -1406,31 +1392,31 @@ async def chat(email: str, message: Message):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@app.get("/history/{email}", response_model=ConversationHistory)
-async def get_history(email: str):
+@app.get("/history/{user_id}", response_model=ConversationHistory)
+async def get_history(user_id: str):
     """Get conversation history for a user"""
     try:
-        history = db_manager.get_conversation_history(email)
+        history = db_manager.get_conversation_history(user_id)
         return ConversationHistory(messages=history)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/close_conversation/{email}")
-async def close_conversation(email: str):
+@app.post("/close_conversation/{user_id}")
+async def close_conversation(user_id: str):
     """Close a user's conversation session"""
     try:
-        ollama_manager.close_conversation(email)
+        model_manager.close_conversation(user_id)
         return {"message": "Conversation closed successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analyze_trends/{email}")
-async def analyze_trends(email: str):
+@app.get("/analyze_trends/{user_id}")
+async def analyze_trends(user_id: str):
     """Analyze trends in user's conversation history"""
     try:
-        history = db_manager.get_conversation_history(email)
+        history = db_manager.get_conversation_history(user_id)
         if not history:
             return {"message": "No conversation history found"}
 
@@ -1473,8 +1459,8 @@ async def analyze_trends(email: str):
 async def shutdown_event():
     """Clean up resources on shutdown"""
     # Close all active conversations
-    for email in list(ollama_manager.conversations.keys()):
-        ollama_manager.close_conversation(email)
+    for email in list(model_manager.conversations.keys()):
+        model_manager.close_conversation(email)
 
 
 # Utility functions for analysis and reporting
@@ -1530,9 +1516,6 @@ def generate_user_report(email: str) -> dict:
 
 
 def main():
-    """Main function to run the application"""
-    import uvicorn
-
     # Configuration
     host = "0.0.0.0"
     port = 8000
@@ -1572,8 +1555,8 @@ def example_usage():
     """Example of how to use the system"""
     async def run_example():
         # Create a user
-        user_email = "example@test.com"
-        user = User(email=user_email, name="Test User")
+        user_id = "user123"
+        user = User(user_id=user_id, name="Test User")
         await create_user(user)
 
         # Send some messages
@@ -1641,21 +1624,21 @@ To use this system:
 Example curl commands:
 
 # Create a user
-curl -X POST "http://localhost:8000/users/" \
-     -H "Content-Type: application/json" \
-     -d '{"email": "user@example.com", "name": "John Doe"}'
+curl - X POST "http://localhost:8000/users/" \
+     - H "Content-Type: application/json" \
+     - d '{"user_id": "user123", "name": "John Doe"}'
 
 # Send a message
-curl -X POST "http://localhost:8000/chat/user@example.com" \
-     -H "Content-Type: application/json" \
-     -d '{"text": "I am feeling anxious today"}'
+curl - X POST "http://localhost:8000/chat/user123" \
+     - H "Content-Type: application/json" \
+     - d '{"text": "I am feeling anxious today"}'
 
 # Get conversation history
-curl "http://localhost:8000/history/user@example.com"
+curl "http://localhost:8000/history/user123"
 
 # Get trends analysis
-curl "http://localhost:8000/analyze_trends/user@example.com"
+curl "http://localhost:8000/analyze_trends/user123"
 
 # Close conversation
-curl -X POST "http://localhost:8000/close_conversation/user@example.com"
+curl - X POST "http://localhost:8000/close_conversation/user123"
 """
