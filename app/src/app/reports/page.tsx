@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Chart from 'chart.js/auto';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
 
-// Cookie utility function (reusing from your home page)
-const getCookie = (name) => {
+// Types
+interface AnalysisTrends {
+  total_messages: number;
+  average_sentiment: number;
+  category_distribution: { [key: string]: number };
+  time_span: {
+    start: string;
+    end: string;
+  };
+}
+
+// Cookie utility function
+const getCookie = (name: string): string | null => {
   if (typeof document === 'undefined') return null;
 
   const cookies = document.cookie.split(';');
@@ -22,13 +32,15 @@ const getCookie = (name) => {
 };
 
 const ReportsPage = () => {
-  const sentimentChartRef = useRef(null);
-  const emotionsChartRef = useRef(null);
+  const sentimentChartRef = useRef<Chart | null>(null);
+  const emotionsChartRef = useRef<Chart | null>(null);
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [trends, setTrends] = useState<AnalysisTrends | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check authentication
     const userNumber = getCookie('hearU_user_number');
     const hasStarted = getCookie('hearU_started');
 
@@ -37,16 +49,31 @@ const ReportsPage = () => {
       return;
     }
 
-    // Initialize charts if authenticated
-    initializeCharts();
+    fetchAnalysisTrends(userNumber);
   }, [router]);
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+  const fetchAnalysisTrends = async (userId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(`http://localhost:8000/analyze_trends/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch analysis data');
+      }
+
+      const data = await response.json();
+      setTrends(data);
+      initializeCharts(data);
+    } catch (error) {
+      console.error('Error fetching analysis trends:', error);
+      setError('Failed to load analysis data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const initializeCharts = () => {
-    // Destroy existing charts if they exist
+  const initializeCharts = (data: AnalysisTrends) => {
     if (sentimentChartRef.current) {
       sentimentChartRef.current.destroy();
     }
@@ -54,16 +81,23 @@ const ReportsPage = () => {
       emotionsChartRef.current.destroy();
     }
 
+    const timeSpan = {
+      start: new Date(data.time_span.start),
+      end: new Date(data.time_span.end),
+    };
+
+    const dateLabels = generateDateLabels(timeSpan.start, timeSpan.end);
+
     // Sentiment Analysis Chart
-    const sentimentCtx = document.getElementById('sentimentChart');
+    const sentimentCtx = document.getElementById('sentimentChart') as HTMLCanvasElement;
     if (sentimentCtx) {
       sentimentChartRef.current = new Chart(sentimentCtx, {
         type: 'line',
         data: {
-          labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+          labels: dateLabels,
           datasets: [{
-            label: 'Mood Score',
-            data: [65, 59, 80, 81, 56, 75, 85],
+            label: 'Sentiment Score',
+            data: Array(dateLabels.length).fill(data.average_sentiment),
             borderColor: '#FF5733',
             backgroundColor: 'rgba(255, 87, 51, 0.1)',
             tension: 0.4,
@@ -98,24 +132,27 @@ const ReportsPage = () => {
             }
           }
         }
-      });
+      }) as Chart;
     }
 
-    // Emotions Chart
-    const emotionsCtx = document.getElementById('emotionsChart');
+    // Categories/Emotions Chart
+    const emotionsCtx = document.getElementById('emotionsChart') as HTMLCanvasElement;
     if (emotionsCtx) {
+      const categories = Object.keys(data.category_distribution);
+      const values = Object.values(data.category_distribution);
+
       emotionsChartRef.current = new Chart(emotionsCtx, {
         type: 'doughnut',
         data: {
-          labels: ['Joy', 'Anxiety', 'Neutral', 'Sadness', 'Anger'],
+          labels: categories,
           datasets: [{
-            data: [30, 20, 25, 15, 10],
+            data: values,
             backgroundColor: [
-              '#4CAF50',
-              '#FF9800',
-              '#2196F3',
-              '#9C27B0',
-              '#F44336'
+              '#4CAF50', // anxiety
+              '#FF9800', // depression
+              '#2196F3', // academic_stress
+              '#9C27B0', // relationship_issues
+              '#F44336'  // career_confusion
             ]
           }]
         },
@@ -131,13 +168,27 @@ const ReportsPage = () => {
             }
           }
         }
-      });
+      }) as Chart;
     }
+  };
+
+  const generateDateLabels = (start: Date, end: Date): string[] => {
+    const labels = [];
+    const current = new Date(start);
+    while (current <= end) {
+      labels.push(current.toLocaleDateString());
+      current.setDate(current.getDate() + 1);
+    }
+    return labels;
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
     <div className="bg-bg-dark text-text-light min-h-screen flex flex-col">
-            <header className="relative flex justify-between items-center py-6 px-8 bg-bg-accent">
+      <header className="relative flex justify-between items-center py-6 px-8 bg-bg-accent">
         <Link href="/">
           <div className="flex items-center gap-4">
             <Image src="/headerLogo.png" width={72} height={55} alt="hearU Logo" />
@@ -145,8 +196,8 @@ const ReportsPage = () => {
         </Link>
 
         <nav className="hidden md:flex gap-12">
-          <Link href="/reports" className="hover:text-primary-green">
-            Reports
+          <Link href="/chat" className="hover:text-primary-green">
+            Chat
           </Link>
           <Link href="/support" className="hover:text-primary-green">
             Support
@@ -169,12 +220,8 @@ const ReportsPage = () => {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d={isMobileMenuOpen
-                ? "M6 18L18 6M6 6l12 12"
-                : "M4 6h16M4 12h16m-7 6h7"
-              }
-            >
-            </path>
+              d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"}
+            />
           </svg>
         </button>
 
@@ -185,25 +232,11 @@ const ReportsPage = () => {
         >
           <div className="flex flex-col items-center pt-24 h-full">
             <Link
-              href="/"
+              href="/chat"
               className="w-full py-4 text-center hover:text-primary-green hover:bg-black/5"
               onClick={toggleMobileMenu}
             >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              className="w-full py-4 text-center hover:text-primary-green hover:bg-black/5"
-              onClick={toggleMobileMenu}
-            >
-              About
-            </Link>
-            <Link
-              href="/reports"
-              className="w-full py-4 text-center hover:text-primary-green hover:bg-black/5"
-              onClick={toggleMobileMenu}
-            >
-              Reports
+              Chat
             </Link>
             <Link
               href="/support"
@@ -214,60 +247,73 @@ const ReportsPage = () => {
             </Link>
           </div>
         </div>
-
-        {isMobileMenuOpen && (
-          <div
-            className="fixed inset-0 bg-black/20 md:hidden"
-            onClick={toggleMobileMenu}
-            aria-hidden="true"
-          />
-        )}
       </header>
 
-
-      {/* Main Content */}
       <div className="flex-grow p-6">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold mb-8">Your Mental Health Report</h2>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Sentiment Analysis Chart */}
-            <div className="bg-bg-accent rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Weekly Mood Trends</h3>
-              <div className="h-64">
-                <canvas id="sentimentChart"></canvas>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-green"></div>
+            </div>
+          ) : error ? (
+            <div className="text-red-500 text-center p-4 bg-bg-accent rounded-lg">
+              {error}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Sentiment Analysis Chart */}
+              <div className="bg-bg-accent rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Sentiment Timeline</h3>
+                <div className="h-64">
+                  <canvas id="sentimentChart"></canvas>
+                </div>
+              </div>
+
+              {/* Categories Distribution Chart */}
+              <div className="bg-bg-accent rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Category Distribution</h3>
+                <div className="h-64">
+                  <canvas id="emotionsChart"></canvas>
+                </div>
+              </div>
+
+              {/* Analysis Summary */}
+              <div className="bg-bg-accent rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Analysis Summary</h3>
+                <div className="space-y-4">
+                  <p>Total Messages: {trends?.total_messages || 0}</p>
+                  <p>Average Sentiment: {(trends?.average_sentiment || 0).toFixed(2)}</p>
+                  <p>Time Period: {trends?.time_span.start.split('T')[0]} to {trends?.time_span.end.split('T')[0]}</p>
+                </div>
+              </div>
+
+              {/* Recommendations */}
+              <div className="bg-bg-accent rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4">Recommendations</h3>
+                <ul className="list-disc list-inside space-y-2">
+                  {trends?.average_sentiment < 0 ? (
+                    <>
+                      <li>Consider speaking with a mental health professional</li>
+                      <li>Practice daily mindfulness exercises</li>
+                      <li>Maintain social connections</li>
+                      <li>Establish a regular sleep schedule</li>
+                      <li>Engage in physical activity</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Continue your positive practices</li>
+                      <li>Share your progress with others</li>
+                      <li>Set new personal growth goals</li>
+                      <li>Maintain your support network</li>
+                      <li>Celebrate your achievements</li>
+                    </>
+                  )}
+                </ul>
               </div>
             </div>
-
-            {/* Emotions Chart */}
-            <div className="bg-bg-accent rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Emotion Distribution</h3>
-              <div className="h-64">
-                <canvas id="emotionsChart"></canvas>
-              </div>
-            </div>
-
-            {/* Additional Stats or Information */}
-            <div className="bg-bg-accent rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Weekly Summary</h3>
-              <div className="space-y-4">
-                <p>Average Mood Score: 71.5</p>
-                <p>Most Frequent Emotion: Joy</p>
-                <p>Improvement from Last Week: +5%</p>
-              </div>
-            </div>
-
-            {/* Recommendations */}
-            <div className="bg-bg-accent rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Recommendations</h3>
-              <ul className="list-disc list-inside space-y-2">
-                <li>Consider meditation to manage anxiety levels</li>
-                <li>Schedule regular physical activity</li>
-                <li>Maintain consistent sleep schedule</li>
-              </ul>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

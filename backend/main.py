@@ -31,6 +31,18 @@ import torch
 import logging
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from collections import Counter
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse, FileResponse
+import io
+import base64
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from io import BytesIO
+import tempfile
+from starlette.background import BackgroundTask
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -219,7 +231,9 @@ class MentalHealthAnalyzer:
     def analyze_text(self, text, timestamp=None):
         text = text.strip()
         timestamp = timestamp or datetime.now()
-        timestamp_str = timestamp.isoformat()  # Convert to ISO format string
+        timestamp_str = timestamp if isinstance(
+            # Convert to ISO format string
+            timestamp, str) else timestamp.isoformat()
 
         # Sentiment Analysis
         sentiment_scores = self.sentiment_analyzer.polarity_scores(text)
@@ -286,6 +300,39 @@ class MentalHealthAnalyzer:
                     })
 
         return keywords
+
+    def analyze_timeline(self):
+        """Analyze the entire timeline data for trends and insights"""
+        if not self.timeline_data:
+            return None
+
+        timeline = pd.DataFrame(self.timeline_data)
+        timeline['timestamp'] = pd.to_datetime(timeline['timestamp'])
+
+        sentiment_trends = timeline.groupby(timeline['timestamp'].dt.date).agg({
+            'sentiment': lambda x: np.mean([d['scores']['compound'] for d in x]),
+            'intensity': lambda x: np.mean([d['score'] for d in x])
+        })
+
+        # Convert datetime.date to string for JSON serialization
+        sentiment_trends_dict = {
+            date.isoformat(): {
+                'sentiment': float(row['sentiment']),
+                'intensity': float(row['intensity'])
+            }
+            for date, row in sentiment_trends.iterrows()
+        }
+
+        return {
+            'sentiment_trends': sentiment_trends_dict,
+            'total_entries': len(timeline),
+            'date_range': {
+                'start': timeline['timestamp'].min().isoformat(),
+                'end': timeline['timestamp'].max().isoformat()
+            },
+            'category_distribution': timeline['category'].apply(lambda x: x['primary']).value_counts().to_dict(),
+            'average_intensity': float(np.mean([d['intensity']['score'] for d in self.timeline_data]))
+        }
 
     def _calculate_intensity(self, text, sentiment_scores):
         intensity_words = {
@@ -483,6 +530,29 @@ class MentalHealthVisualizer:
                           color='category', size='intensity_score',
                           title='Intensity Distribution Over Time')
         fig3.show()
+
+    def plot_intensity_heatmap(self):
+        """Plot heatmap of intensity scores by category and date"""
+        timeline_data = pd.DataFrame(self.analyzer.timeline_data)
+        timeline_data['intensity_score'] = timeline_data['intensity'].apply(
+            lambda x: x['score'])
+        timeline_data['category'] = timeline_data['category'].apply(
+            lambda x: x['primary'])
+        timeline_data['date'] = pd.to_datetime(
+            timeline_data['timestamp']).dt.date
+
+        pivot_table = pd.pivot_table(
+            timeline_data,
+            values='intensity_score',
+            index='category',
+            columns='date',
+            aggfunc='mean'
+        )
+
+        plt.figure(figsize=(15, 8))
+        sns.heatmap(pivot_table, cmap='YlOrRd', annot=True, fmt='.1f')
+        plt.title('Intensity Heatmap by Category')
+        plt.tight_layout()
 
 
 # Initialize FastAPI app
@@ -1418,37 +1488,409 @@ async def analyze_trends(user_id: str):
         if not history:
             return {"message": "No conversation history found"}
 
-        # Convert history to DataFrame
         df = pd.DataFrame(history)
         df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-        # Calculate trends
-        sentiment_trend = df.apply(
-            lambda x: json.loads(x['analysis'])[
-                'sentiment']['scores']['compound']
-            if isinstance(x['analysis'], str)
-            else x['analysis']['sentiment']['scores']['compound'],
-            axis=1
-        ).mean()
-
-        categories = df.apply(
-            lambda x: json.loads(x['analysis'])['category']['primary']
-            if isinstance(x['analysis'], str)
-            else x['analysis']['category']['primary'],
-            axis=1
-        ).value_counts().to_dict()
+        df['sentiment'] = df['analysis'].apply(
+            lambda x: x['sentiment']['scores']['compound'])
+        df['category'] = df['analysis'].apply(
+            lambda x: x['category']['primary'])
+        df['intensity'] = df['analysis'].apply(
+            lambda x: x['intensity']['score'])
 
         return {
             "total_messages": len(history),
-            "average_sentiment": float(sentiment_trend),
-            "category_distribution": categories,
+            "average_sentiment": float(df['sentiment'].mean()),
+            "category_distribution": df['category'].value_counts().to_dict(),
+            "average_intensity": float(df['intensity'].mean()),
             "time_span": {
-                "start": df['timestamp'].min().isoformat(),
-                "end": df['timestamp'].max().isoformat()
-            }
+                "start": df['timestamp'].min(),
+                "end": df['timestamp'].max()
+            },
+            "sentiment_progression": df.set_index('timestamp')['sentiment'].resample('D').mean().to_dict(),
+            "intensity_progression": df.set_index('timestamp')['intensity'].resample('D').mean().to_dict(),
+            "top_keywords": get_top_keywords(df['analysis']),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_top_keywords(analyses, top_n=10):
+    keywords = []
+    for analysis in analyses:
+        keywords.extend([kw['text'] for kw in analysis['keywords']])
+    return Counter(keywords).most_common(top_n)
+
+
+@app.get("/sentiment_timeline/{user_id}")
+async def sentiment_timeline(user_id: str):
+    """Get sentiment timeline for a user"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        df = pd.DataFrame(history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['sentiment'] = df['analysis'].apply(
+            lambda x: x['sentiment']['scores']['compound'])
+
+        timeline = df.set_index('timestamp')[
+            'sentiment'].resample('D').mean().to_dict()
+        return {"sentiment_timeline": timeline}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/category_distribution/{user_id}")
+async def category_distribution(user_id: str):
+    """Get category distribution for a user"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        df = pd.DataFrame(history)
+        df['category'] = df['analysis'].apply(
+            lambda x: x['category']['primary'])
+
+        distribution = df['category'].value_counts().to_dict()
+        return {"category_distribution": distribution}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/intensity_distribution/{user_id}")
+async def intensity_distribution(user_id: str):
+    """Get intensity distribution for a user"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        df = pd.DataFrame(history)
+        df['intensity'] = df['analysis'].apply(
+            lambda x: x['intensity']['score'])
+
+        distribution = df['intensity'].value_counts().sort_index().to_dict()
+        return {"intensity_distribution": distribution}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/keyword_analysis/{user_id}")
+async def keyword_analysis(user_id: str):
+    """Get keyword analysis for a user"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        df = pd.DataFrame(history)
+        keywords = []
+        for analysis in df['analysis']:
+            keywords.extend([kw['text'] for kw in analysis['keywords']])
+
+        keyword_counts = Counter(keywords)
+        return {
+            "top_keywords": dict(keyword_counts.most_common(10)),
+            "all_keywords": dict(keyword_counts)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/comprehensive_analysis/{user_id}")
+async def comprehensive_analysis(user_id: str):
+    """Get comprehensive analysis for a user"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        df = pd.DataFrame(history)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['sentiment'] = df['analysis'].apply(
+            lambda x: x['sentiment']['scores']['compound'])
+        df['category'] = df['analysis'].apply(
+            lambda x: x['category']['primary'])
+        df['intensity'] = df['analysis'].apply(
+            lambda x: x['intensity']['score'])
+
+        keywords = []
+        for analysis in df['analysis']:
+            keywords.extend([kw['text'] for kw in analysis['keywords']])
+
+        return {
+            "total_messages": len(history),
+            "time_span": {
+                "start": df['timestamp'].min(),
+                "end": df['timestamp'].max()
+            },
+            "sentiment_analysis": {
+                "average_sentiment": float(df['sentiment'].mean()),
+                "sentiment_progression": df.set_index('timestamp')['sentiment'].resample('D').mean().to_dict(),
+            },
+            "category_analysis": {
+                "category_distribution": df['category'].value_counts().to_dict(),
+                "primary_category": df['category'].mode()[0],
+            },
+            "intensity_analysis": {
+                "average_intensity": float(df['intensity'].mean()),
+                "intensity_progression": df.set_index('timestamp')['intensity'].resample('D').mean().to_dict(),
+            },
+            "keyword_analysis": {
+                "top_keywords": dict(Counter(keywords).most_common(10)),
+            },
+            "conversation_summary": generate_conversation_summary(df)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def generate_conversation_summary(df):
+    return {
+        "most_positive_message": df.loc[df['sentiment'].idxmax()]['message'],
+        "most_negative_message": df.loc[df['sentiment'].idxmin()]['message'],
+        "most_intense_message": df.loc[df['intensity'].idxmax()]['message'],
+        "least_intense_message": df.loc[df['intensity'].idxmin()]['message'],
+    }
+
+
+@app.get("/get_suggestions/{user_id}")
+async def get_suggestions(user_id: str):
+    """
+    Get 5-10 personalized suggestions for improving mental well-being based on the user's conversation history.
+    """
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        # Prepare a summary of the user's conversations
+        df = pd.DataFrame(history)
+        summary = f"Based on the user's conversation history:\n"
+        summary += f"- Total messages: {len(history)}\n"
+        summary += f"- Primary category: {df['analysis'].apply(
+            lambda x: x['category']['primary']).mode()[0]}\n"
+        summary += f"- Average sentiment: {df['analysis'].apply(
+            lambda x: x['sentiment']['scores']['compound']).mean():.2f}\n"
+        summary += f"- Average intensity: {df['analysis'].apply(
+            lambda x: x['intensity']['score']).mean():.2f}\n"
+
+        # Generate suggestions using the Llama model
+        prompt = f"""
+        {summary}
+
+        Based on this information, provide 5 to 10 helpful suggestions for the user to improve their mental well-being.
+        Format the response as a numbered list. AS A NUMBERED LIST WITH 5 to 10 ITEMS, SEPARATED BY "\\n" each, starting as 1. 2. blabla.
+        """
+
+        response = await model_manager.get_response(user_id, prompt)
+
+        return {"suggestions": response}
+    except Exception as e:
+        logger.error(f"Error in get_suggestions endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="An error occurred while generating suggestions") from e
+
+
+@app.get("/sentiment_timeline/{user_id}")
+async def get_sentiment_timeline(user_id: str):
+    """Generate and return sentiment timeline plot"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        system = MentalHealthAnalysisSystem()
+        analyzer = system.analyzer
+        for entry in history:
+            analyzer.analyze_text(entry['message'], entry['timestamp'])
+
+        visualizer = MentalHealthVisualizer(analyzer)
+
+        plt.figure(figsize=(12, 6))
+        visualizer.plot_sentiment_timeline()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+
+        return FileResponse(buf, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/category_distribution/{user_id}")
+async def get_category_distribution(user_id: str):
+    """Generate and return category distribution plot"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        system = MentalHealthAnalysisSystem()
+        analyzer = system.analyzer
+        for entry in history:
+            analyzer.analyze_text(entry['message'], entry['timestamp'])
+
+        visualizer = MentalHealthVisualizer(analyzer)
+
+        plt.figure(figsize=(12, 6))
+        visualizer.plot_category_distribution()
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+
+        return FileResponse(buf, media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/intensity_heatmap/{user_id}")
+async def get_intensity_heatmap(user_id: str):
+    """Generate and return intensity heatmap"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        system = MentalHealthAnalysisSystem()
+        analyzer = system.analyzer
+        for entry in history:
+            analyzer.analyze_text(entry['message'], entry['timestamp'])
+
+        visualizer = MentalHealthVisualizer(analyzer)
+
+        plt.figure(figsize=(15, 8))
+        visualizer.plot_intensity_heatmap()
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+            plt.savefig(tmp.name, format='png')
+            plt.close()  # Close the plot to free up memory
+
+        # Return the file and then delete it
+        return FileResponse(
+            tmp.name,
+            media_type="image/png",
+            background=BackgroundTask(lambda: os.unlink(tmp.name))
+        )
+    except Exception as e:
+        logger.error(f"Error generating intensity heatmap: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/interactive_dashboard/{user_id}")
+async def get_interactive_dashboard(user_id: str):
+    """Generate and return interactive dashboard data"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        system = MentalHealthAnalysisSystem()
+        analyzer = system.analyzer
+        for entry in history:
+            analyzer.analyze_text(entry['message'], entry['timestamp'])
+
+        df = pd.DataFrame(analyzer.timeline_data)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df['sentiment_score'] = df['sentiment'].apply(
+            lambda x: x['scores']['compound'])
+        df['intensity_score'] = df['intensity'].apply(lambda x: x['score'])
+        df['category'] = df['category'].apply(lambda x: x['primary'])
+
+        # Sentiment Timeline
+        fig1 = px.line(df, x='timestamp', y='sentiment_score',
+                       title='Sentiment Trend Over Time')
+
+        # Category Distribution
+        fig2 = px.bar(df['category'].value_counts(),
+                      title='Category Distribution')
+
+        # Intensity Scatter
+        fig3 = px.scatter(df, x='timestamp', y='intensity_score', color='category', size='intensity_score',
+                          title='Intensity Distribution Over Time')
+
+        return JSONResponse({
+            "sentiment_timeline": fig1.to_json(),
+            "category_distribution": fig2.to_json(),
+            "intensity_scatter": fig3.to_json()
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/comprehensive_report/{user_id}")
+async def get_comprehensive_report(user_id: str):
+    """Generate and return a comprehensive report"""
+    try:
+        history = db_manager.get_conversation_history(user_id)
+        if not history:
+            return {"message": "No conversation history found"}
+
+        system = MentalHealthAnalysisSystem()
+        analyzer = system.analyzer
+        for entry in history:
+            analyzer.analyze_text(entry['message'], entry['timestamp'])
+
+        if not analyzer.timeline_data:
+            return {"message": "No analyzable data found"}
+
+        timeline_analysis = analyzer.analyze_timeline()
+        if timeline_analysis is None:
+            return {"message": "Not enough data for timeline analysis"}
+
+        weekly_summary = generate_weekly_summary(analyzer)
+        category_progression = {
+            cat: analyze_category_progression(analyzer, cat)
+            for cat in MentalHealthCategories.get_all_categories()
+        }
+
+        return JSONResponse({
+            "timeline_analysis": timeline_analysis,
+            "weekly_summary": weekly_summary,
+            "category_progression": category_progression
+        })
+    except Exception as e:
+        logger.error(f"Error in comprehensive report: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Helper functions (if not already defined)
+
+
+def generate_weekly_summary(analyzer):
+    df = pd.DataFrame(analyzer.timeline_data)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df['week'] = df['timestamp'].dt.isocalendar().week
+
+    weekly_stats = df.groupby('week').agg({
+        'sentiment': lambda x: float(np.mean([i['scores']['compound'] for i in x])),
+        'intensity': lambda x: float(np.mean([i['score'] for i in x])),
+        'category': lambda x: pd.Series([i['primary'] for i in x]).mode()[0]
+    }).reset_index()
+
+    return weekly_stats.to_dict(orient='records')
+
+
+def analyze_category_progression(analyzer, category):
+    category_entries = [
+        entry for entry in analyzer.timeline_data
+        if entry['category']['primary'] == category
+    ]
+
+    if not category_entries:
+        return None
+
+    return {
+        'total_entries': len(category_entries),
+        'average_intensity': np.mean([e['intensity']['score'] for e in category_entries]),
+        'sentiment_progression': [e['sentiment']['scores']['compound'] for e in category_entries],
+        'timestamps': [e['timestamp'] for e in category_entries]
+    }
+
 
 # Shutdown event handler
 
@@ -1497,8 +1939,8 @@ def generate_user_report(user_id: str) -> dict:
         "overview": {
             "total_conversations": len(history),
             "time_period": {
-                "start": df['timestamp'].min().isoformat(),
-                "end": df['timestamp'].max().isoformat()
+                "start": df['timestamp'].min(),
+                "end": df['timestamp'].max()
             },
             "average_sentiment": float(df['sentiment'].mean())
         },
@@ -1509,6 +1951,7 @@ def generate_user_report(user_id: str) -> dict:
             "variance": float(df['sentiment'].var())
         }
     }
+
 
 # Main execution
 
