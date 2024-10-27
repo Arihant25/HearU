@@ -43,6 +43,8 @@ import plotly.graph_objects as go
 from io import BytesIO
 import tempfile
 from starlette.background import BackgroundTask
+import speech_recognition as sr
+from pydub import AudioSegment
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -401,7 +403,7 @@ class DatabaseManager:
         c = conn.cursor()
         timestamp = datetime.now().isoformat()
         c.execute('''
-            INSERT INTO conversations 
+            INSERT INTO conversations
             (user_id, message, timestamp, analysis, model_response)
             VALUES (?, ?, ?, ?, ?)
         ''', (user_id, message, timestamp, json.dumps(analysis), model_response))
@@ -412,9 +414,9 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
         c.execute('''
-            SELECT message, timestamp, analysis, model_response 
-            FROM conversations 
-            WHERE user_id = ? 
+            SELECT message, timestamp, analysis, model_response
+            FROM conversations
+            WHERE user_id = ?
             ORDER BY timestamp
         ''', (user_id,))
         rows = c.fetchall()
@@ -1954,6 +1956,26 @@ def generate_user_report(user_id: str) -> dict:
             "variance": float(df['sentiment'].var())
         }
     }
+
+
+def analyze_audio():
+    # Initialize recognizer
+    r = sr.Recognizer()
+
+    # Load the audio file
+    audio_file = "audio.wav"
+
+    try:
+        with sr.AudioFile(audio_file) as source:
+            audio = r.record(source)  # Read the entire audio file
+            text = r.recognize_google(audio) # Perform speech recognition
+            print("Converted Text:", text)
+    except FileNotFoundError:
+        print(f"Error: File '{audio_file}' not found.")
+    except sr.UnknownValueError:
+        print("Could not understand audio")
+    except sr.RequestError as e:
+        print("Could not request results from Google Speech Recognition service; {0}".format(e))
 
 
 # Main execution
