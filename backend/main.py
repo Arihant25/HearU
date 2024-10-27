@@ -579,6 +579,7 @@ class MentalHealthAnalysisSystem:
         self.train_system()
 
     def _get_training_data(self):
+
         return [
             # Anxiety (General)
             {
@@ -1704,8 +1705,10 @@ async def get_sentiment_timeline(user_id: str):
 
         system = MentalHealthAnalysisSystem()
         analyzer = system.analyzer
+        print(history)
         for entry in history:
             analyzer.analyze_text(entry['message'], entry['timestamp'])
+            print(entry)
 
         visualizer = MentalHealthVisualizer(analyzer)
 

@@ -77,3 +77,36 @@ body {
 .custom-button:hover {
   background-color: var(--button-hover);
 }
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.bounce-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.bounce-dot {
+  width: 8px;
+  height: 8px;
+  margin: 0 2px;
+  background-color: #00FF85;
+  border-radius: 50%;
+  display: inline-block;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.bounce-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.bounce-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}

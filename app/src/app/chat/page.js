@@ -68,7 +68,7 @@ const ChatPage = () => {
       console.error(err);
     }
   };
-  
+
   const sendMessageToBackend = async (userId, message) => {
     try {
       setIsLoading(true);
@@ -237,33 +237,47 @@ const ChatPage = () => {
         )}
 
         <div className="flex-grow bg-bg-accent rounded-lg p-4 mb-4 overflow-y-auto">
-          {isLoading && (
-            <div className="text-center p-2">
-              <span className="animate-spin mr-2">⌛</span>
-              Processing...
-            </div>
-          )}
-
           <div className="space-y-4">
             {messages.map((msg, index) => (
               <div
                 key={index}
                 className={`flex ${
                   msg.isUser ? "justify-end" : "justify-start"
-                }`}
+                } mb-4`}
               >
                 <div
-                  className={`max-w-[70%] rounded-lg p-3 ${
+                  className={`relative max-w-[70%] rounded-2xl p-4 ${
                     msg.isUser
-                      ? "bg-primary-green text-bg-dark"
-                      : "bg-primary-blue text-bg-dark"
+                      ? "bg-primary-green text-bg-dark rounded-br-none"
+                      : "bg-primary-blue text-[#00FF85] rounded-bl-none"
                   }`}
                 >
-                  {msg.content}
+                  <p className="break-words">{msg.content}</p>
+                  <span
+                    className={`text-xs mt-1 ${
+                      msg.isUser ? "text-bg-dark/70" : "text-[#00FF85]/70"
+                    } block`}
+                  >
+                    {msg.timestamp.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
                 </div>
               </div>
             ))}
             <div ref={messagesEndRef} />
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[70%] rounded-lg p-3 bg-primary-blue text-[#00FF85]">
+                  <div className="text-center p-2 bounce-container">
+                    <div className="bounce-dot"></div>
+                    <div className="bounce-dot"></div>
+                    <div className="bounce-dot"></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

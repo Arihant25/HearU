@@ -1,323 +1,310 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Chart from 'chart.js/auto';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Chart from "chart.js/auto";
+import Image from "next/image";
+import Link from "next/link";
 
-// Types
-interface AnalysisTrends {
+// Define interfaces for the API response data
+interface AnalysisData {
   total_messages: number;
   average_sentiment: number;
   category_distribution: { [key: string]: number };
+  average_intensity: number;
   time_span: {
     start: string;
     end: string;
   };
+  sentiment_progression: { [key: string]: number };
+  intensity_progression: { [key: string]: number };
+  top_keywords: [string, number][];
 }
 
-// Cookie utility function
-const getCookie = (name: string): string | null => {
-  if (typeof document === 'undefined') return null;
-
-  const cookies = document.cookie.split(';');
-  for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.split('=').map(c => c.trim());
-    if (cookieName === name) {
-      return cookieValue;
-    }
-  }
-  return null;
-};
+interface SuggestionResponse {
+  suggestions: string;
+}
 
 const ReportsPage = () => {
   const sentimentChartRef = useRef<Chart | null>(null);
-  const emotionsChartRef = useRef<Chart | null>(null);
+  const categoryChartRef = useRef<Chart | null>(null);
+  const intensityChartRef = useRef<Chart | null>(null);
+  const keywordChartRef = useRef<Chart | null>(null);
   const router = useRouter();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [trends, setTrends] = useState<AnalysisTrends | null>(null);
+
+  const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const userNumber = getCookie('hearU_user_number');
-    const hasStarted = getCookie('hearU_started');
-
-    if (!userNumber || !hasStarted) {
-      router.push('/');
+    const userId = getCookie("hearU_user_number");
+    if (!userId) {
+      router.push("/");
       return;
     }
 
-    fetchAnalysisTrends(userNumber);
+    fetchData(userId);
   }, [router]);
 
-  const fetchAnalysisTrends = async (userId: string) => {
+  const fetchData = async (userId: string) => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await fetch(`http://localhost:8000/analyze_trends/${userId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch analysis data');
-      }
 
-      const data = await response.json();
-      setTrends(data);
-      initializeCharts(data);
+      // Fetch analysis data
+      const analysisResponse = await fetch(
+        `http://localhost:8000/analyze_trends/${userId}`
+      );
+      if (!analysisResponse.ok)
+        throw new Error("Failed to fetch analysis data");
+      const analysisData = await analysisResponse.json();
+      setAnalysisData(analysisData);
+
+      // Fetch suggestions
+      const suggestionsResponse = await fetch(
+        `http://localhost:8000/get_suggestions/${userId}`
+      );
+      if (!suggestionsResponse.ok)
+        throw new Error("Failed to fetch suggestions");
+      const suggestionsData: SuggestionResponse =
+        await suggestionsResponse.json();
+      setSuggestions(
+        suggestionsData.suggestions.split("\n").filter((s) => s.trim())
+      );
+
+      initializeCharts(analysisData);
     } catch (error) {
-      console.error('Error fetching analysis trends:', error);
-      setError('Failed to load analysis data. Please try again later.');
+      console.error("Error fetching data:", error);
+      setError("Failed to load report data");
     } finally {
       setLoading(false);
     }
   };
 
-  const initializeCharts = (data: AnalysisTrends) => {
-    if (sentimentChartRef.current) {
-      sentimentChartRef.current.destroy();
-    }
-    if (emotionsChartRef.current) {
-      emotionsChartRef.current.destroy();
-    }
+  const initializeCharts = (data: AnalysisData) => {
+    // Destroy existing charts
+    [
+      sentimentChartRef,
+      categoryChartRef,
+      intensityChartRef,
+      keywordChartRef,
+    ].forEach((ref) => {
+      if (ref.current) ref.current.destroy();
+    });
 
-    const timeSpan = {
-      start: new Date(data.time_span.start),
-      end: new Date(data.time_span.end),
-    };
-
-    const dateLabels = generateDateLabels(timeSpan.start, timeSpan.end);
-
-    // Sentiment Analysis Chart
-    const sentimentCtx = document.getElementById('sentimentChart') as HTMLCanvasElement;
+    // Sentiment Timeline Chart
+    const sentimentCtx = document.getElementById(
+      "sentimentChart"
+    ) as HTMLCanvasElement;
     if (sentimentCtx) {
+      const labels = Object.keys(data.sentiment_progression);
+      const values = Object.values(data.sentiment_progression);
+
       sentimentChartRef.current = new Chart(sentimentCtx, {
-        type: 'line',
+        type: "line",
         data: {
-          labels: dateLabels,
-          datasets: [{
-            label: 'Sentiment Score',
-            data: Array(dateLabels.length).fill(data.average_sentiment),
-            borderColor: '#FF5733',
-            backgroundColor: 'rgba(255, 87, 51, 0.1)',
-            tension: 0.4,
-            fill: true
-          }]
+          labels,
+          datasets: [
+            {
+              label: "Sentiment Score",
+              data: values,
+              borderColor: "#4CAF50",
+              backgroundColor: "rgba(76, 175, 80, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
           plugins: {
-            legend: {
-              display: false
-            }
+            title: { display: true, text: "Sentiment Over Time" },
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              grid: {
-                color: 'rgba(255, 255, 255, 0.1)'
-              },
-              ticks: {
-                color: '#B3B3B3'
-              }
-            },
-            x: {
-              grid: {
-                color: 'rgba(255, 255, 255, 0.1)'
-              },
-              ticks: {
-                color: '#B3B3B3'
-              }
-            }
-          }
-        }
-      }) as Chart;
+        },
+      });
     }
 
-    // Categories/Emotions Chart
-    const emotionsCtx = document.getElementById('emotionsChart') as HTMLCanvasElement;
-    if (emotionsCtx) {
+    // Category Distribution Chart
+    const categoryCtx = document.getElementById(
+      "categoryChart"
+    ) as HTMLCanvasElement;
+    if (categoryCtx) {
       const categories = Object.keys(data.category_distribution);
       const values = Object.values(data.category_distribution);
 
-      emotionsChartRef.current = new Chart(emotionsCtx, {
-        type: 'doughnut',
+      categoryChartRef.current = new Chart(categoryCtx, {
+        type: "doughnut",
         data: {
           labels: categories,
-          datasets: [{
-            data: values,
-            backgroundColor: [
-              '#4CAF50', // anxiety
-              '#FF9800', // depression
-              '#2196F3', // academic_stress
-              '#9C27B0', // relationship_issues
-              '#F44336'  // career_confusion
-            ]
-          }]
+          datasets: [
+            {
+              data: values,
+              backgroundColor: [
+                "#FF6384",
+                "#36A2EB",
+                "#FFCE56",
+                "#4BC0C0",
+                "#9966FF",
+              ],
+            },
+          ],
         },
         options: {
           responsive: true,
-          maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'right',
-              labels: {
-                color: '#B3B3B3'
-              }
-            }
-          }
-        }
-      }) as Chart;
+            title: { display: true, text: "Category Distribution" },
+          },
+        },
+      });
+    }
+
+    // Intensity Timeline Chart
+    const intensityCtx = document.getElementById(
+      "intensityChart"
+    ) as HTMLCanvasElement;
+    if (intensityCtx) {
+      const labels = Object.keys(data.intensity_progression);
+      const values = Object.values(data.intensity_progression);
+
+      intensityChartRef.current = new Chart(intensityCtx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [
+            {
+              label: "Intensity Score",
+              data: values,
+              borderColor: "#FF9800",
+              backgroundColor: "rgba(255, 152, 0, 0.1)",
+              tension: 0.4,
+              fill: true,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Intensity Over Time" },
+          },
+        },
+      });
+    }
+
+    // Keywords Chart
+    const keywordCtx = document.getElementById(
+      "keywordChart"
+    ) as HTMLCanvasElement;
+    if (keywordCtx) {
+      const [keywords, counts] = data.top_keywords.reduce(
+        ([k, c], [keyword, count]) => [
+          [...k, keyword],
+          [...c, count],
+        ],
+        [[] as string[], [] as number[]]
+      );
+
+      keywordChartRef.current = new Chart(keywordCtx, {
+        type: "bar",
+        data: {
+          labels: keywords,
+          datasets: [
+            {
+              label: "Frequency",
+              data: counts,
+              backgroundColor: "#2196F3",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: { display: true, text: "Top Keywords" },
+          },
+        },
+      });
     }
   };
 
-  const generateDateLabels = (start: Date, end: Date): string[] => {
-    const labels = [];
-    const current = new Date(start);
-    while (current <= end) {
-      labels.push(current.toLocaleDateString());
-      current.setDate(current.getDate() + 1);
-    }
-    return labels;
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-green"></div>
+      </div>
+    );
+  }
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>;
+  }
 
   return (
-    <div className="bg-bg-dark text-text-light min-h-screen flex flex-col">
-      <header className="relative flex justify-between items-center py-6 px-8 bg-bg-accent">
-        <Link href="/">
-          <div className="flex items-center gap-4">
-            <Image src="/headerLogo.png" width={72} height={55} alt="hearU Logo" />
+    <div className="bg-bg-dark text-text-light min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">
+          Mental Health Analysis Report
+        </h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Charts */}
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <canvas id="sentimentChart"></canvas>
           </div>
-        </Link>
-
-        <nav className="hidden md:flex gap-12">
-          <Link href="/chat" className="hover:text-primary-green">
-            Chat
-          </Link>
-          <Link href="/support" className="hover:text-primary-green">
-            Support
-          </Link>
-        </nav>
-
-        <button
-          className="md:hidden z-50"
-          onClick={toggleMobileMenu}
-          aria-label="Toggle mobile menu"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d={isMobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"}
-            />
-          </svg>
-        </button>
-
-        <div
-          className={`fixed top-0 right-0 h-full w-64 bg-bg-accent shadow-lg transform transition-transform duration-300 ease-in-out md:hidden ${
-            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
-        >
-          <div className="flex flex-col items-center pt-24 h-full">
-            <Link
-              href="/chat"
-              className="w-full py-4 text-center hover:text-primary-green hover:bg-black/5"
-              onClick={toggleMobileMenu}
-            >
-              Chat
-            </Link>
-            <Link
-              href="/support"
-              className="w-full py-4 text-center hover:text-primary-green hover:bg-black/5"
-              onClick={toggleMobileMenu}
-            >
-              Support
-            </Link>
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <canvas id="categoryChart"></canvas>
           </div>
-        </div>
-      </header>
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <canvas id="intensityChart"></canvas>
+          </div>
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <canvas id="keywordChart"></canvas>
+          </div>
 
-      <div className="flex-grow p-6">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">Your Mental Health Report</h2>
-
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-green"></div>
+          {/* Summary Statistics */}
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Summary</h2>
+            <div className="space-y-2">
+              <p>Total Messages: {analysisData?.total_messages}</p>
+              <p>
+                Average Sentiment: {analysisData?.average_sentiment.toFixed(2)}
+              </p>
+              <p>
+                Average Intensity: {analysisData?.average_intensity.toFixed(2)}
+              </p>
+              <p>
+                Time Period:{" "}
+                {new Date(
+                  analysisData?.time_span.start || ""
+                ).toLocaleDateString()}{" "}
+                -
+                {new Date(
+                  analysisData?.time_span.end || ""
+                ).toLocaleDateString()}
+              </p>
             </div>
-          ) : error ? (
-            <div className="text-red-500 text-center p-4 bg-bg-accent rounded-lg">
-              {error}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Sentiment Analysis Chart */}
-              <div className="bg-bg-accent rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Sentiment Timeline</h3>
-                <div className="h-64">
-                  <canvas id="sentimentChart"></canvas>
-                </div>
-              </div>
+          </div>
 
-              {/* Categories Distribution Chart */}
-              <div className="bg-bg-accent rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Category Distribution</h3>
-                <div className="h-64">
-                  <canvas id="emotionsChart"></canvas>
-                </div>
-              </div>
-
-              {/* Analysis Summary */}
-              <div className="bg-bg-accent rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Analysis Summary</h3>
-                <div className="space-y-4">
-                  <p>Total Messages: {trends?.total_messages || 0}</p>
-                  <p>Average Sentiment: {(trends?.average_sentiment || 0).toFixed(2)}</p>
-                  <p>Time Period: {trends?.time_span.start.split('T')[0]} to {trends?.time_span.end.split('T')[0]}</p>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div className="bg-bg-accent rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Recommendations</h3>
-                <ul className="list-disc list-inside space-y-2">
-                  {trends?.average_sentiment < 0 ? (
-                    <>
-                      <li>Consider speaking with a mental health professional</li>
-                      <li>Practice daily mindfulness exercises</li>
-                      <li>Maintain social connections</li>
-                      <li>Establish a regular sleep schedule</li>
-                      <li>Engage in physical activity</li>
-                    </>
-                  ) : (
-                    <>
-                      <li>Continue your positive practices</li>
-                      <li>Share your progress with others</li>
-                      <li>Set new personal growth goals</li>
-                      <li>Maintain your support network</li>
-                      <li>Celebrate your achievements</li>
-                    </>
-                  )}
-                </ul>
-              </div>
-            </div>
-          )}
+          {/* Suggestions */}
+          <div className="bg-bg-accent p-6 rounded-lg">
+            <h2 className="text-xl font-semibold mb-4">Recommendations</h2>
+            <ul className="list-disc list-inside space-y-2">
+              {suggestions.map((suggestion, index) => (
+                <li key={index}>{suggestion}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   );
+};
+
+// Utility function to get cookie value
+const getCookie = (name: string): string | null => {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
+  return null;
 };
 
 export default ReportsPage;
