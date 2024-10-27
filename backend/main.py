@@ -1,3 +1,4 @@
+from llama_cpp import Llama
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
@@ -371,22 +372,12 @@ class DatabaseManager:
         ]
 
 
-class MistralManager:
+class LlamaManager:
     def __init__(self):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.config = PeftConfig.from_pretrained(
-            "GRMenon/mental-health-mistral-7b-instructv0.2-finetuned-V2")
-        self.base_model = AutoModelForCausalLM.from_pretrained(
-            "mistralai/Mistral-7B-Instruct-v0.2",
-            torch_dtype=torch.float16,
-            device_map=self.device
+        self.llm = Llama.from_pretrained(
+            repo_id="sujal011/llama3.2-3b-mental-health-chatbot",
+            filename="unsloth.Q8_0.gguf",
         )
-        self.model = PeftModel.from_pretrained(
-            self.base_model,
-            "GRMenon/mental-health-mistral-7b-instructv0.2-finetuned-V2"
-        )
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            "mistralai/Mistral-7B-Instruct-v0.2")
         self.conversation_histories = {}
 
     async def start_conversation(self, user_id: str):
@@ -398,40 +389,30 @@ class MistralManager:
         if user_id not in self.conversation_histories:
             await self.start_conversation(user_id)
 
-        # Format the conversation history and current message
+        # Add new message to conversation history
         conversation = self.conversation_histories[user_id]
         conversation.append({"role": "user", "content": message})
 
-        # Format the input for Mistral
-        prompt = self._format_conversation(conversation)
-
-        # Generate response
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=512,
-                temperature=0.7,
-                top_p=0.95,
-                do_sample=True
+        try:
+            # Generate response using llama.cpp
+            response = self.llm.create_chat_completion(
+                messages=conversation
             )
 
-        response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            # Extract the assistant's message from the response
+            assistant_message = response['choices'][0]['message']['content']
 
-        # Clean up the response and add to conversation history
-        response = response.replace(prompt, "").strip()
-        conversation.append({"role": "assistant", "content": response})
+            # Add response to conversation history
+            conversation.append({
+                "role": "assistant",
+                "content": assistant_message
+            })
 
-        return response
+            return assistant_message
 
-    def _format_conversation(self, conversation):
-        formatted_prompt = "<s>[INST] "
-        for msg in conversation:
-            if msg["role"] == "user":
-                formatted_prompt += f"{msg['content']} [/INST]"
-            else:
-                formatted_prompt += f"{msg['content']} </s><s>[INST] "
-        return formatted_prompt
+        except Exception as e:
+            print(f"Error generating response: {str(e)}")
+            return "I apologize, but I encountered an error while processing your message. Please try again."
 
     def close_conversation(self, user_id: str):
         if user_id in self.conversation_histories:
@@ -502,8 +483,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Initialize core components
 db_manager = DatabaseManager()
-model_manager = MistralManager()
-
+model_manager = LlamaManager()
 
 class MentalHealthAnalysisSystem:
     def __init__(self):
