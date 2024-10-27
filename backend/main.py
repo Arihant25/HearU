@@ -1,7 +1,7 @@
 from llama_cpp import Llama
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import List, Optional, Dict
 import sqlite3
 import json
@@ -28,8 +28,11 @@ import uvicorn
 from peft import PeftModel, PeftConfig
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
-from huggingface_hub import login
-login(token="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")
+import logging
+from datetime import datetime
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # FastAPI Models
@@ -189,7 +192,13 @@ class MentalHealthAnalyzer:
     """Core analyzer class for mental health text analysis"""
 
     def __init__(self):
-        self.nlp = spacy.load("en_core_web_sm")
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except IOError:
+            print("Downloading spaCy model...")
+            download("en_core_web_sm")
+            self.nlp = spacy.load("en_core_web_sm")
+
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
         self.vectorizer = TfidfVectorizer(ngram_range=(1, 2))
         self.classifier = MultinomialNB()
@@ -209,6 +218,7 @@ class MentalHealthAnalyzer:
     def analyze_text(self, text, timestamp=None):
         text = text.strip()
         timestamp = timestamp or datetime.now()
+        timestamp_str = timestamp.isoformat()  # Convert to ISO format string
 
         # Sentiment Analysis
         sentiment_scores = self.sentiment_analyzer.polarity_scores(text)
@@ -227,7 +237,7 @@ class MentalHealthAnalyzer:
 
         result = {
             'text': text,
-            'timestamp': timestamp,
+            'timestamp': timestamp_str,  # Use the string version
             'sentiment': {
                 'label': sentiment,
                 'scores': sentiment_scores
@@ -235,7 +245,8 @@ class MentalHealthAnalyzer:
             'category': {
                 'primary': category,
                 'confidence': float(max(probs)),
-                'all_probabilities': dict(zip(self.classifier.classes_, probs))
+                # Convert numpy array to list
+                'all_probabilities': dict(zip(self.classifier.classes_, probs.tolist()))
             },
             'keywords': keywords,
             'intensity': intensity
@@ -374,50 +385,46 @@ class DatabaseManager:
 
 class LlamaManager:
     def __init__(self):
-        self.llm = Llama.from_pretrained(
-            repo_id="sujal011/llama3.2-3b-mental-health-chatbot",
-            filename="unsloth.Q8_0.gguf",
-        )
-        self.conversation_histories = {}
+        try:
+            self.llm = Llama.from_pretrained(
+                repo_id="sujal011/llama3.2-3b-mental-health-chatbot",
+                filename="unsloth.Q8_0.gguf",
+            )
+            self.conversation_histories = {}
+        except Exception as e:
+            logger.error(f"Failed to initialize Llama model: {str(e)}")
+            raise
 
     async def start_conversation(self, user_id: str):
         if user_id not in self.conversation_histories:
             self.conversation_histories[user_id] = []
-            print(f"Started conversation for user {user_id}")
+            logger.info(f"Started conversation for user {user_id}")
 
     async def get_response(self, user_id: str, message: str) -> str:
         if user_id not in self.conversation_histories:
             await self.start_conversation(user_id)
 
-        # Add new message to conversation history
         conversation = self.conversation_histories[user_id]
         conversation.append({"role": "user", "content": message})
 
         try:
-            # Generate response using llama.cpp
             response = self.llm.create_chat_completion(
                 messages=conversation
             )
-
-            # Extract the assistant's message from the response
             assistant_message = response['choices'][0]['message']['content']
-
-            # Add response to conversation history
             conversation.append({
                 "role": "assistant",
                 "content": assistant_message
             })
-
             return assistant_message
-
         except Exception as e:
-            print(f"Error generating response: {str(e)}")
+            logger.error(f"Error generating response: {str(e)}")
             return "I apologize, but I encountered an error while processing your message. Please try again."
 
     def close_conversation(self, user_id: str):
         if user_id in self.conversation_histories:
             del self.conversation_histories[user_id]
-            print(f"Closed conversation for user {user_id}")
+            logger.info(f"Closed conversation for user {user_id}")
 
 
 class MentalHealthVisualizer:
@@ -484,6 +491,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 # Initialize core components
 db_manager = DatabaseManager()
 model_manager = LlamaManager()
+
 
 class MentalHealthAnalysisSystem:
     def __init__(self):
@@ -1369,7 +1377,9 @@ async def chat(user_id: str, message: Message):
             "model_response": model_response
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        logger.error(f"Error in chat endpoint: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="An error occurred while processing your request") from e
 
 
 @app.get("/history/{user_id}", response_model=ConversationHistory)
@@ -1439,14 +1449,14 @@ async def analyze_trends(user_id: str):
 async def shutdown_event():
     """Clean up resources on shutdown"""
     # Close all active conversations
-    for email in list(model_manager.conversations.keys()):
-        model_manager.close_conversation(email)
+    for user_id in list(model_manager.conversations.keys()):
+        model_manager.close_conversation(user_id)
 
 
 # Utility functions for analysis and reporting
-def generate_user_report(email: str) -> dict:
+def generate_user_report(user_id: str) -> dict:
     """Generate a comprehensive report for a user"""
-    history = db_manager.get_conversation_history(email)
+    history = db_manager.get_conversation_history(user_id)
     if not history:
         return {"message": "No conversation history found"}
 
@@ -1510,10 +1520,10 @@ def main():
 
     Available endpoints:
     - POST   /users/                  Create new user
-    - POST   /chat/{{email}}           Send message
-    - GET    /history/{{email}}        Get chat history
-    - POST   /close_conversation/{{email}} Close session
-    - GET    /analyze_trends/{{email}} Get analysis
+    - POST   /chat/{{user_id}}           Send message
+    - GET    /history/{{user_id}}        Get chat history
+    - POST   /close_conversation/{{user_id}} Close session
+    - GET    /analyze_trends/{{user_id}} Get analysis
 
     Server will be available at:
     http://{host}:{port}
@@ -1548,23 +1558,23 @@ def example_usage():
 
         for message_text in messages:
             message = Message(text=message_text)
-            response = await chat(user_email, message)
+            response = await chat(user_user_id, message)
             print(f"\nMessage: {message_text}")
             print(f"Analysis: {json.dumps(response['analysis'], indent=2)}")
             print(f"Model Response: {response['model_response']}")
 
         # Get history
-        history = await get_history(user_email)
+        history = await get_history(user_user_id)
         print("\nConversation History:")
         print(json.dumps(history.dict(), indent=2))
 
         # Get trends
-        trends = await analyze_trends(user_email)
+        trends = await analyze_trends(user_user_id)
         print("\nTrends Analysis:")
         print(json.dumps(trends, indent=2))
 
         # Close conversation
-        await close_conversation(user_email)
+        await close_conversation(user_user_id)
 
     # Run the example
     asyncio.run(run_example())
@@ -1583,7 +1593,7 @@ if __name__ == "__main__":
 To use this system:
 
 1. Install required packages:
-   pip install fastapi uvicorn pydantic[email] sqlite3 torch spacy vaderSentiment \
+   pip install fastapi uvicorn sqlite3 torch spacy vaderSentiment \
                scikit-learn pandas numpy matplotlib seaborn plotly
 
 2. Download spaCy model:
@@ -1604,14 +1614,14 @@ To use this system:
 Example curl commands:
 
 # Create a user
-curl - X POST "http://localhost:8000/users/" \
-     - H "Content-Type: application/json" \
-     - d '{"user_id": "user123", "name": "John Doe"}'
+curl -X POST "http://localhost:8000/users/" \
+     -H "Content-Type: application/json" \
+     -d '{"user_id": "user123", "name": "John Doe"}'
 
 # Send a message
-curl - X POST "http://localhost:8000/chat/user123" \
-     - H "Content-Type: application/json" \
-     - d '{"text": "I am feeling anxious today"}'
+curl -X POST "http://localhost:8000/chat/user123" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "I am feeling anxious today"}'
 
 # Get conversation history
 curl "http://localhost:8000/history/user123"
