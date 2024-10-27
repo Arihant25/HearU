@@ -26,8 +26,9 @@ export default function Home() {
         </div>
 
         {/* Right Content*/}
-        <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
-          <Image src="/logo.png" 
+        <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-20">
+          <Image 
+            src="/logo.png" 
             width={1000} 
             height={400} 
             alt="Mental Well-being Illustration" 
