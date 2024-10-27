@@ -144,6 +144,16 @@ export default function Home() {
           </div>
         </div>
 
+<<<<<<< HEAD
+        {/* Right Content*/}
+        <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-20">
+          <Image 
+            src="/logo.png" 
+            width={1000} 
+            height={400} 
+            alt="Mental Well-being Illustration" 
+            style={{ width: '29vw', height: '21vw' }} 
+=======
         {/* Right Content */}
         <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
           <Image
@@ -153,6 +163,7 @@ export default function Home() {
             alt="Mental Well-being Illustration"
             style={{ width: "29vw", height: "21vw" }}
             priority
+>>>>>>> 65c3201d36ab866f1c13f74d29e130f8f47dd92a
           />
         </div>
       </main>
