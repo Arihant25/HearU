@@ -6,7 +6,7 @@ export default function Login() {
     <div className="h-screen flex items-center justify-center bg-background font-sans">
       <div className="w-full max-w-md p-8 bg-gray-800 rounded-lg shadow-lg space-y-12 relative">
         {/* Back Button */}
-        <Link href="/" className="absolute top-4 left-4 text-primary-green hover:text-button-hover transition duration-300">
+        <Link href="/signin" className="absolute top-4 left-4 text-primary-green hover:text-button-hover transition duration-300">
           &larr; Back
         </Link>
 
@@ -19,8 +19,8 @@ export default function Login() {
             className="mb-4"
           />
           <div className="flex flex-col items-center mb-6 space-y-4">
-            <h1 className="text-3xl font-bold text-primary-green">Welcome Back!</h1>
-            <p className="text-center text-text-muted">Let's continue from where we left off!</p>
+            <h1 className="text-3xl font-bold text-primary-green">Hello There!</h1>
+            <p className="text-center text-text-muted">Your journey to mental well-being begins here!</p>
           </div>
         </div>
 
@@ -49,14 +49,10 @@ export default function Login() {
 
           <div className="flex justify-center items-center">
             <button type="submit" className="signinButton">
-              Sign In
+              Sign Up
             </button>
           </div>
         </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-text-muted">Don't have an account? <Link href="/signup" className="text-primary-green hover:text-button-hover transition duration-300">Join Us!</Link></p>
-        </div>
       </div>
     </div>
   );
