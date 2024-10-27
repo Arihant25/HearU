@@ -1,8 +1,33 @@
-"use client"
+"use client";
 import Image from "next/image";
 import Header from "../components/Header";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const createUser = async (userId) => {
+  try {
+    const response = await fetch("http://localhost:8000/users/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        name: `User ${userId}`,
+      }),
+      credentials: "include", // Add this line
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to create user");
+    }
+
+    const data = await response.json();
+    console.log("User created:", data);
+  } catch (error) {
+    console.error("Error creating user:", error);
+  }
+};
 
 // Cookie utility functions
 const setCookie = (name, value, days = 7) => {
@@ -12,9 +37,9 @@ const setCookie = (name, value, days = 7) => {
 };
 
 const getCookie = (name) => {
-  const cookies = document.cookie.split(';');
+  const cookies = document.cookie.split(";");
   for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.split('=').map(c => c.trim());
+    const [cookieName, cookieValue] = cookie.split("=").map((c) => c.trim());
     if (cookieName === name) {
       return cookieValue;
     }
@@ -32,10 +57,12 @@ export default function Home() {
   const [isReady, setIsReady] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [userNumber, setUserNumber] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Check if user has already started and router is ready
   useEffect(() => {
-    const savedNumber = getCookie('hearU_user_number');
+    const savedNumber = getCookie("hearU_user_number");
     if (savedNumber) {
       setUserNumber(parseInt(savedNumber));
       setHasStarted(true);
@@ -44,23 +71,29 @@ export default function Home() {
   }, []);
 
   const handleGetStarted = async () => {
-    if (!isReady) return;
+    if (!isReady || isLoading) return;
 
-    // Generate random number if not already set
-    if (!userNumber) {
-      const randomNum = generateRandomNumber();
-      setUserNumber(randomNum);
-      setCookie('hearU_user_number', randomNum.toString(), 30); // Store for 30 days
-    }
-
-    // Set started cookie
-    setCookie('hearU_started', 'true', 30);
-    setHasStarted(true);
+    setIsLoading(true);
+    setError(null);
 
     try {
-      await router.push('/chat');
+      if (!userNumber) {
+        const randomNum = generateRandomNumber();
+        setUserNumber(randomNum);
+        setCookie("hearU_user_number", randomNum.toString(), 30);
+
+        await createUser(randomNum.toString());
+      }
+
+      setCookie("hearU_started", "true", 30);
+      setHasStarted(true);
+
+      await router.push("/chat");
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error("Error:", error);
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,23 +109,33 @@ export default function Home() {
           <h2 className="text-5xl font-extrabold leading-snug">
             Empower Your Mental Well-being
           </h2>
-          <p className="text-xl text-text-muted text-justify" style={{ width: '100%' }}>
-            At hearU, we offer a secure space for self-reflection, support, and mental well-being insights. Join us in taking a step towards understanding and managing your mental health with confidence.
+          <p
+            className="text-xl text-text-muted text-justify"
+            style={{ width: "100%" }}
+          >
+            At hearU, we offer a secure space for self-reflection, support, and
+            mental well-being insights. Join us in taking a step towards
+            understanding and managing your mental health with confidence.
           </p>
           <div className="flex flex-col items-center space-y-4">
             <button
               onClick={handleGetStarted}
-              disabled={!isReady}
+              disabled={!isReady || isLoading}
               className={`mt-6 py-3 px-8 rounded-full gradient-border transition-all duration-300 ${
-                !isReady
-                  ? 'opacity-50 cursor-not-allowed'
+                !isReady || isLoading
+                  ? "opacity-50 cursor-not-allowed"
                   : hasStarted
-                    ? 'bg-primary-blue text-bg-dark hover:bg-primary-green'
-                    : 'bg-primary-green text-bg-dark hover:bg-primary-blue'
+                  ? "bg-primary-blue text-bg-dark hover:bg-primary-green"
+                  : "bg-primary-green text-bg-dark hover:bg-primary-blue"
               }`}
             >
-              {hasStarted ? 'Continue Journey' : 'Get Started'}
+              {isLoading
+                ? "Loading..."
+                : hasStarted
+                ? "Continue Journey"
+                : "Get Started"}
             </button>
+            {error && <p className="text-red-500 mt-2">{error}</p>}
             {userNumber && (
               <p className="text-sm text-text-muted">
                 Your unique number: {userNumber}
@@ -108,7 +151,7 @@ export default function Home() {
             width={1000}
             height={400}
             alt="Mental Well-being Illustration"
-            style={{ width: '29vw', height: '21vw' }}
+            style={{ width: "29vw", height: "21vw" }}
             priority
           />
         </div>

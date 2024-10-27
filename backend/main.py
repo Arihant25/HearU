@@ -30,6 +30,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import logging
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -487,6 +488,13 @@ class MentalHealthVisualizer:
 # Initialize FastAPI app
 app = FastAPI(title="Mental Health Analysis System")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Add your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Initialize core components
 db_manager = DatabaseManager()
